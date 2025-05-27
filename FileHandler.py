@@ -1,24 +1,26 @@
 import logging
+import re
 import winreg
 
-import json5
 import os
 
 
 def openAdofai(url: str):
-    url = os.path.join(base_url, url.split('=')[-1], 'main.adofai')
+    url = os.path.join(base_url, url.split('&')[0].split('=')[-1], 'main.adofai')
     try:
         with open(url, 'r', encoding='utf-8-sig', errors='ignore') as f:
-            data = json5.load(f)
-        author = data['settings']['author']
-        artist = data['settings']['artist']
-        song = data['settings']['song']
-        return author, artist, song
+            text = f.read()
+        author = re.search(r'"author":\s*"([^"]+)"', text)
+        artist = re.search(r'"artist":\s*"([^"]+)"', text)
+        song = re.search(r'"song":\s*"([^"]+)"', text)
+        # print('author: ', author.group(1), 'artist: ', artist.group(1), 'song: ', song.group(1))
+        # print()
+        return author.group(1), artist.group(1), song.group(1)
     except FileNotFoundError:
         logging.info(f"File not found: {url}")
         return None, None, None
-    except ValueError:
-        logging.error(f"Invalid JSON: {url}")
+    except Exception as e:
+        logging.error(e)
         return None, None, None
 
 

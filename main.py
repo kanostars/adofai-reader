@@ -61,7 +61,7 @@ class SongApp(QWidget):
                 author, artist, song_ = openAdofai(song['workshopUrl'])
                 if author is None and artist is None and song_ is None:
                     continue
-                md5 = generate_md5(author, artist, song_, strip_html=False)
+                md5 = generate_md5(author, artist, song_)
                 completion = cd.get(f'CustomWorld_{md5}_Completion')
                 x_accuracy = cd.get(f'CustomWorld_{md5}_XAccuracy')
                 if completion is None:
