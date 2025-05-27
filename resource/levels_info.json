@@ -278,22 +278,6 @@
         "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2608430646"
     },
     {
-        "id": 2323,
-        "name": "test",
-        "difficulty": 2,
-        "music": {
-            "name": "test",
-            "artists": [
-                "MGG Music"
-            ]
-        },
-        "creators": [
-            "Ara"
-        ],
-        "maxBpm": 65,
-        "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2495312243"
-    },
-    {
         "id": 2714,
         "name": "Holiday Afternoon",
         "difficulty": 2,
