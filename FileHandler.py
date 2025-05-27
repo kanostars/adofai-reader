@@ -8,12 +8,13 @@ import os
 def openAdofai(url: str):
     url = os.path.join(base_url, url.split('&')[0].split('=')[-1], 'main.adofai')
     try:
-        with open(url, 'r', encoding='utf-8-sig', errors='ignore') as f:
+        with open(url, 'r', newline='\r', encoding='utf-8-sig', errors='ignore') as f:
             text = f.read()
+            text = text.replace(r'\n', '\n')
         author = re.search(r'"author":\s*"([^"]+)"', text)
         artist = re.search(r'"artist":\s*"([^"]+)"', text)
         song = re.search(r'"song":\s*"([^"]+)"', text)
-        # print('author: ', author.group(1), 'artist: ', artist.group(1), 'song: ', song.group(1))
+        # print('author: ', author.group(1), 'artist: ', artist.group(1), 'song: ', song.group(1).encode())
         # print()
         return author.group(1), artist.group(1), song.group(1)
     except FileNotFoundError:
