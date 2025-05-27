@@ -262,22 +262,6 @@
         "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2580125473"
     },
     {
-        "id": 2221,
-        "name": "Super Battleworn Insomniac",
-        "difficulty": 2,
-        "music": {
-            "name": "Super Battleworn Insomniac",
-            "artists": [
-                "Fizzd"
-            ]
-        },
-        "creators": [
-            "sansw"
-        ],
-        "maxBpm": 0,
-        "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2608430646"
-    },
-    {
         "id": 2714,
         "name": "Holiday Afternoon",
         "difficulty": 2,
@@ -373,22 +357,6 @@
         ],
         "maxBpm": 105,
         "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=3323739880"
-    },
-    {
-        "id": 2315,
-        "name": "도원경 桃源境",
-        "difficulty": 3,
-        "music": {
-            "name": "도원경 桃源境",
-            "artists": [
-                "Plum"
-            ]
-        },
-        "creators": [
-            "Nickname"
-        ],
-        "maxBpm": 88,
-        "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2621599408"
     },
     {
         "id": 595,
