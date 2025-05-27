@@ -13,9 +13,9 @@ def openAdofai(url: str):
         author = re.search(r'"author":\s*"((?:\\"|.)*?)"', text, flags=re.DOTALL)
         artist = re.search(r'"artist":\s*"((?:\\"|.)*?)"', text, flags=re.DOTALL)
         song = re.search(r'"song":\s*"((?:\\"|.)*?)"', text, flags=re.DOTALL)
-        # print('author: ', author, 'artist: ', artist, 'song: ', song)
+        # print('author: ', author.group(1), 'artist: ', artist.group(1), 'song: ', song.group(1))
         # print()
-        return author.group(1), artist.group(1), song.group(1).replace('\\"', '"')
+        return author.group(1).replace('\\"', '"'), artist.group(1).replace('\\"', '"'), song.group(1).replace('\\"', '"')
     except FileNotFoundError:
         logging.info(f"File not found: {url}")
         return None, None, None
