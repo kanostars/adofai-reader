@@ -1624,22 +1624,6 @@
         "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2578266548"
     },
     {
-        "id": 2460,
-        "name": "Beautiful Lullaby",
-        "difficulty": 5,
-        "music": {
-            "name": "Beautiful Lullaby",
-            "artists": [
-                "Tido Kang"
-            ]
-        },
-        "creators": [
-            "NfK"
-        ],
-        "maxBpm": 31.5,
-        "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2635176006"
-    },
-    {
         "id": 4030,
         "name": "終わりの少女 (feat. こにゃばた)",
         "difficulty": 5,
@@ -1966,38 +1950,6 @@
         ],
         "maxBpm": 110,
         "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2640729235"
-    },
-    {
-        "id": 2325,
-        "name": "adofaization",
-        "difficulty": 6,
-        "music": {
-            "name": "adofaization",
-            "artists": [
-                "Ssimille"
-            ]
-        },
-        "creators": [
-            "Ara"
-        ],
-        "maxBpm": 164,
-        "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2494532863"
-    },
-    {
-        "id": 2369,
-        "name": "Pure_Heart",
-        "difficulty": 6,
-        "music": {
-            "name": "Pure_Heart",
-            "artists": [
-                "Cinamoro"
-            ]
-        },
-        "creators": [
-            "prodzpod"
-        ],
-        "maxBpm": 217,
-        "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2594559151"
     },
     {
         "id": 5456,
