@@ -1,5 +1,8 @@
+import logging
 import sys
 import json
+
+import json5
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QCheckBox, QGroupBox,
@@ -8,10 +11,14 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtGui import QDesktopServices, QFontMetrics
 
+from FileHandler import openAdofai
+from MD5Handler import generate_md5
+
 
 class SongApp(QWidget):
     def __init__(self):
         super().__init__()
+
         self.setWindowTitle("歌曲列表")
         self.setFixedWidth(800)
         self.setMinimumHeight(400)
@@ -19,15 +26,16 @@ class SongApp(QWidget):
 
         # 初始化文件路径
         self.data_file = 'resource/levels_info.json'
-        self.state_file = 'resource/song_states.json'
+        self.custom_data = r"H:\Steam\steamapps\common\A Dance of Fire and Ice\User\custom_data.sav"
+
+        # 加载歌曲数据
+        self.songs = self.load_song_data()
+        self.ids = []
 
         # 初始化数据结构
         self.song_states = self.load_song_states()
         self.group_boxes = {}
         self.song_widgets = {}
-
-        # 加载歌曲数据
-        self.songs = self.load_song_data()
 
         self.init_ui()
         self.create_all_widgets()
@@ -36,7 +44,7 @@ class SongApp(QWidget):
         """加载歌曲基本信息"""
         try:
             with open(self.data_file, 'r', encoding='utf-8') as f:
-                raw_songs = json.load(f)
+                raw_songs = json5.load(f)
                 return [song for song in raw_songs if isinstance(song, dict)]
         except (FileNotFoundError, json.JSONDecodeError):
             return []
@@ -44,20 +52,34 @@ class SongApp(QWidget):
     def load_song_states(self):
         """加载歌曲状态数据"""
         try:
-            with open(self.state_file, 'r', encoding='utf-8') as f:
-                states = json.load(f)
-                return {int(k): self.validate_state(v) for k, v in states.items()}
-        except (FileNotFoundError, json.JSONDecodeError, ValueError):
-            return {}
+            cd = json.load(open(self.custom_data, 'r', encoding='utf-8-sig'))
+            states = {}
+            for song in self.songs:
+                author, artist, song_ = openAdofai(song['workshopUrl'])
+                if author is None and artist is None and song_ is None:
+                    continue
+                md5 = generate_md5(author, artist, song_, strip_html=False)
+                completion = cd.get(f'CustomWorld_{md5}_Completion')
+                x_accuracy = cd.get(f'CustomWorld_{md5}_XAccuracy')
+                if completion is None:
+                    states[song['id']] = 0  # 未玩过
+                    continue
+                if completion < 1:
+                    states[song['id']] = 1  # 进行中
+                    continue
+                if x_accuracy >= 1:
+                    states[song['id']] = 3  # 完美无暇
+                    continue
+                states[song['id']] = 2  # 完成
+            return {int(k): self.validate_state(v) for k, v in states.items()}
 
-    def save_song_states(self):
-        """保存歌曲状态到文件"""
-        with open(self.state_file, 'w', encoding='utf-8') as f:
-            json.dump(self.song_states, f, indent=2)
+        except (FileNotFoundError, ValueError) as e:
+            logging.error("无法加载自定义数据文件", e)
+            return {}
 
     @staticmethod
     def validate_state(value):
-        """确保状态值在0-3之间, 0:未下载；1：进行中；2：已完成；3：完美无暇"""
+        """确保状态值在0-3之间, 0:未玩过；1：进行中；2：已完成；3：完美无暇"""
         try:
             state = int(value)
             return max(0, min(state, 3))
@@ -74,7 +96,7 @@ class SongApp(QWidget):
 
         # 添加更多筛选选项
         self.state_filters = {
-            0: QCheckBox("未下载"),
+            0: QCheckBox("未玩过"),
             1: QCheckBox("进行中"),
             2: QCheckBox("已完成"),
             3: QCheckBox("完美无瑕")
@@ -152,13 +174,11 @@ class SongApp(QWidget):
         self.scroll_layout.addSpacerItem(QSpacerItem(20, 20,
                                                      QSizePolicy.Policy.Minimum,
                                                      QSizePolicy.Policy.Expanding))
-        # 初始保存一次确保文件存在
-        self.save_song_states()
 
     def create_status_combobox(self, song):
         """创建状态下拉框（替换原来的复选框）"""
         states = {
-            0: "未下载",
+            0: "未玩过",
             1: "进行中",
             2: "已完成",
             3: "完美无瑕"
@@ -167,9 +187,7 @@ class SongApp(QWidget):
         combo = QComboBox()
         combo.addItems(states.values())
         combo.setCurrentIndex(self.song_states.get(song['id'], 0))
-        combo.currentIndexChanged.connect(
-            lambda idx, sid=song['id']: self.update_song_status(sid, idx)
-        )
+        combo.setEnabled(False)
         combo.setFixedWidth(100)
         return combo
 
@@ -181,11 +199,11 @@ class SongApp(QWidget):
         name_label.setMinimumWidth(50)
         name_label.setFixedWidth(220)
         name_label.setStyleSheet("""
-               QLabel {
-                   padding-right: 5px;
-                   qproperty-alignment: AlignLeft;
-               }
-           """)
+                   QLabel {
+                       padding-right: 5px;
+                       qproperty-alignment: AlignLeft;
+                   }
+               """)
         fm = QFontMetrics(name_label.font())
         elided_name = fm.elidedText(song["music"]["name"], Qt.TextElideMode.ElideRight, 220)
         name_label.setText(elided_name)
@@ -199,11 +217,11 @@ class SongApp(QWidget):
         creators_label.setFixedWidth(190)
         creators_label.setToolTip(creators)
         creators_label.setStyleSheet("""
-               QLabel {
-                   padding-right: 5px;
-                   qproperty-alignment: AlignLeft;
-               }
-           """)
+                   QLabel {
+                       padding-right: 5px;
+                       qproperty-alignment: AlignLeft;
+                   }
+               """)
         fm = QFontMetrics(creators_label.font())
         elided_creators = fm.elidedText(creators, Qt.TextElideMode.ElideRight, 150)
         creators_label.setText(elided_creators)
@@ -217,21 +235,6 @@ class SongApp(QWidget):
             lambda _, url=song.get("workshopUrl"): self.open_url(url)
         )
         return download_btn
-
-    def create_status_checkbox(self, song):
-        """创建状态复选框"""
-        completed = QCheckBox()
-        completed.setChecked(self.song_states.get(song['id'], False))
-        completed.stateChanged.connect(
-            lambda state, sid=song['id']: self.update_song_status(sid, state)
-        )
-        return completed
-
-    def update_song_status(self, song_id, state):
-        """更新并保存歌曲状态（核心方法）"""
-        self.song_states[song_id] = self.validate_state(state)
-        self.save_song_states()
-        self.update_visibility()
 
     def update_visibility(self):
         visible_groups = set()
@@ -267,8 +270,12 @@ class SongApp(QWidget):
 
     def closeEvent(self, event):
         """窗口关闭时确保保存最后状态"""
-        self.save_song_states()
         event.accept()
+
+    def focusInEvent(self, a0):
+        print("focusInEvent")
+        super().focusInEvent(a0)
+        self.update_visibility()
 
 
 if __name__ == '__main__':
