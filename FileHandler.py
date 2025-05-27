@@ -1,7 +1,6 @@
 import logging
 import re
 import winreg
-
 import os
 
 
@@ -11,12 +10,12 @@ def openAdofai(url: str):
         with open(url, 'r', newline='\r', encoding='utf-8-sig', errors='ignore') as f:
             text = f.read()
             text = text.replace(r'\n', '\n')
-        author = re.search(r'"author":\s*"([^"]+)"', text)
-        artist = re.search(r'"artist":\s*"([^"]+)"', text)
-        song = re.search(r'"song":\s*"([^"]+)"', text)
-        # print('author: ', author.group(1), 'artist: ', artist.group(1), 'song: ', song.group(1).encode())
+        author = re.search(r'"author":\s*"((?:\\"|.)*?)"', text, flags=re.DOTALL)
+        artist = re.search(r'"artist":\s*"((?:\\"|.)*?)"', text, flags=re.DOTALL)
+        song = re.search(r'"song":\s*"((?:\\"|.)*?)"', text, flags=re.DOTALL)
+        # print('author: ', author, 'artist: ', artist, 'song: ', song)
         # print()
-        return author.group(1), artist.group(1), song.group(1)
+        return author.group(1), artist.group(1), song.group(1).replace('\\"', '"')
     except FileNotFoundError:
         logging.info(f"File not found: {url}")
         return None, None, None
