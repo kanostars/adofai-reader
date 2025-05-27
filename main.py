@@ -1,4 +1,5 @@
 import logging
+import os.path
 import sys
 import json
 
@@ -11,6 +12,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtGui import QDesktopServices, QFontMetrics
 
+import FileHandler
 from FileHandler import openAdofai
 from MD5Handler import generate_md5
 
@@ -26,7 +28,8 @@ class SongApp(QWidget):
 
         # 初始化文件路径
         self.data_file = 'resource/levels_info.json'
-        self.custom_data = r"H:\Steam\steamapps\common\A Dance of Fire and Ice\User\custom_data.sav"
+        self.custom_data = os.path.join(FileHandler.get_steam_install_path(), 'steamapps', 'common',
+                                        'A Dance of Fire and Ice', 'User', 'custom_data.sav')
 
         # 加载歌曲数据
         self.songs = self.load_song_data()
