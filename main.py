@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
     QLabel, QPushButton, QCheckBox, QGroupBox,
     QScrollArea, QSizePolicy, QSpacerItem, QComboBox
 )
-from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtCore import Qt, QUrl, QEvent
 from PyQt6.QtGui import QDesktopServices, QFontMetrics
 
 import FileHandler
@@ -305,10 +305,13 @@ class SongApp(QWidget):
         """窗口关闭时确保保存最后状态"""
         event.accept()
 
-    def focusInEvent(self, a0):
-        print("focusInEvent")
-        super().focusInEvent(a0)
-        self.update_visibility()
+    def changeEvent(self, event):
+        if event.type() == 99:
+            self.song_states = self.load_song_states()
+            for song_id, song_state in self.song_states.items():
+                if song_id in self.song_widgets:
+                    self.song_widgets[song_id]['status'].setCurrentIndex(song_state)
+        super().changeEvent(event)
 
 
 if __name__ == '__main__':
