@@ -3,7 +3,6 @@ import os.path
 import sys
 import json
 
-import json5
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QCheckBox, QGroupBox,
@@ -13,7 +12,7 @@ from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtGui import QDesktopServices, QFontMetrics
 
 import FileHandler
-from FileHandler import openAdofai
+from FileHandler import open_adofai
 from MD5Handler import generate_md5
 
 
@@ -27,9 +26,10 @@ class SongApp(QWidget):
         self.resize(600, 500)
 
         # 初始化文件路径
-        self.data_file = 'resource/levels_info.json'
-        self.custom_data = os.path.join(FileHandler.get_steam_install_path(), 'steamapps', 'common',
-                                        'A Dance of Fire and Ice', 'User', 'custom_data.sav')
+        self.data_file_path = 'resource/levels_info.json'
+        self.md5_cache_path = 'resource/workshop_md5_map.json'
+        self.custom_data_path = os.path.join(FileHandler.get_steam_install_path(), 'steamapps', 'common',
+                                             'A Dance of Fire and Ice', 'User', 'custom_data.sav')
 
         # 加载歌曲数据
         self.songs = self.load_song_data()
@@ -43,11 +43,26 @@ class SongApp(QWidget):
         self.init_ui()
         self.create_all_widgets()
 
+    def load_md5_cache(self):
+        """加载MD5缓存"""
+        try:
+            with open(self.md5_cache_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            with open(self.md5_cache_path, 'w', encoding='utf-8') as f:
+                json.dump({}, f)
+            return {}
+
+    def save_md5_cache(self, md5_cache):
+        """保存MD5缓存"""
+        with open(self.md5_cache_path, 'w', encoding='utf-8') as f:
+            json.dump(md5_cache, f, ensure_ascii=False, indent=4)
+
     def load_song_data(self):
         """加载歌曲基本信息"""
         try:
-            with open(self.data_file, 'r', encoding='utf-8') as f:
-                raw_songs = json5.load(f)
+            with open(self.data_file_path, 'r', encoding='utf-8') as f:
+                raw_songs = json.load(f)
                 return [song for song in raw_songs if isinstance(song, dict)]
         except (FileNotFoundError, json.JSONDecodeError):
             return []
@@ -55,13 +70,23 @@ class SongApp(QWidget):
     def load_song_states(self):
         """加载歌曲状态数据"""
         try:
-            cd = json.load(open(self.custom_data, 'r', encoding='utf-8-sig'))
+            cd = json.load(open(self.custom_data_path, 'r', encoding='utf-8-sig'))
+            md5_cache = self.load_md5_cache()
+            new_cache = {}
+
             states = {}
             for song in self.songs:
-                author, artist, song_ = openAdofai(song['workshopUrl'])
-                if author is None and artist is None and song_ is None:
-                    continue
-                md5 = generate_md5(author, artist, song_)
+                workshop_id = song['workshopUrl'].split('&')[0].split('=')[-1]
+
+                if workshop_id in md5_cache:
+                    md5 = md5_cache[workshop_id]
+                else:
+                    author, artist, song_ = open_adofai(workshop_id)
+                    if author is None and artist is None and song_ is None:
+                        continue
+                    md5 = generate_md5(author, artist, song_)
+                    new_cache[workshop_id] = md5
+
                 completion = cd.get(f'CustomWorld_{md5}_Completion')
                 x_accuracy = cd.get(f'CustomWorld_{md5}_XAccuracy')
                 if completion is None:
@@ -74,6 +99,11 @@ class SongApp(QWidget):
                     states[song['id']] = 3  # 完美无暇
                     continue
                 states[song['id']] = 2  # 完成
+
+            if new_cache:
+                md5_cache.update(new_cache)
+                self.save_md5_cache(md5_cache)
+
             return {int(k): self.validate_state(v) for k, v in states.items()}
 
         except (FileNotFoundError, ValueError) as e:

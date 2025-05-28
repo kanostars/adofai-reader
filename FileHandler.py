@@ -4,8 +4,8 @@ import winreg
 import os
 
 
-def openAdofai(url: str):
-    url = os.path.join(base_url, url.split('&')[0].split('=')[-1], 'main.adofai')
+def open_adofai(id: str):
+    url = os.path.join(base_url, id, 'main.adofai')
     try:
         with open(url, 'r', newline='\r', encoding='utf-8-sig', errors='ignore') as f:
             text = f.read()
@@ -43,6 +43,7 @@ def get_steam_install_path():
                 winreg.KEY_READ
             )
         except FileNotFoundError:
+
             return None
 
     try:
