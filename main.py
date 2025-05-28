@@ -1,18 +1,15 @@
 import logging
-import os.path
 import sys
-import json
 
+from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtGui import QDesktopServices, QFontMetrics
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QCheckBox, QGroupBox,
     QScrollArea, QSizePolicy, QSpacerItem, QComboBox
 )
-from PyQt6.QtCore import Qt, QUrl, QEvent
-from PyQt6.QtGui import QDesktopServices, QFontMetrics
 
 import FileHandler
-from FileHandler import open_adofai
 from MD5Handler import generate_md5
 
 
@@ -25,53 +22,25 @@ class SongApp(QWidget):
         self.setMinimumHeight(400)
         self.resize(600, 500)
 
-        # 初始化文件路径
-        self.data_file_path = 'resource/levels_info.json'
-        self.md5_cache_path = 'resource/workshop_md5_map.json'
-        self.custom_data_path = os.path.join(FileHandler.get_steam_install_path(), 'steamapps', 'common',
-                                             'A Dance of Fire and Ice', 'User', 'custom_data.sav')
-
         # 加载歌曲数据
-        self.songs = self.load_song_data()
+        self.songs = FileHandler.load_song_data()
         self.ids = []
 
         # 初始化数据结构
         self.song_states = self.load_song_states()
+        self.btn_status = FileHandler.load_status_data()
         self.group_boxes = {}
         self.song_widgets = {}
 
         self.init_ui()
         self.create_all_widgets()
 
-    def load_md5_cache(self):
-        """加载MD5缓存"""
-        try:
-            with open(self.md5_cache_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            with open(self.md5_cache_path, 'w', encoding='utf-8') as f:
-                json.dump({}, f)
-            return {}
-
-    def save_md5_cache(self, md5_cache):
-        """保存MD5缓存"""
-        with open(self.md5_cache_path, 'w', encoding='utf-8') as f:
-            json.dump(md5_cache, f, ensure_ascii=False, indent=4)
-
-    def load_song_data(self):
-        """加载歌曲基本信息"""
-        try:
-            with open(self.data_file_path, 'r', encoding='utf-8') as f:
-                raw_songs = json.load(f)
-                return [song for song in raw_songs if isinstance(song, dict)]
-        except (FileNotFoundError, json.JSONDecodeError):
-            return []
 
     def load_song_states(self):
         """加载歌曲状态数据"""
         try:
-            cd = json.load(open(self.custom_data_path, 'r', encoding='utf-8-sig'))
-            md5_cache = self.load_md5_cache()
+            cd = FileHandler.load_custom_data()
+            md5_cache = FileHandler.load_md5_cache()
             new_cache = {}
 
             states = {}
@@ -81,7 +50,7 @@ class SongApp(QWidget):
                 if workshop_id in md5_cache:
                     md5 = md5_cache[workshop_id]
                 else:
-                    author, artist, song_ = open_adofai(workshop_id)
+                    author, artist, song_ = FileHandler.open_adofai(workshop_id)
                     if author is None and artist is None and song_ is None:
                         continue
                     md5 = generate_md5(author, artist, song_)
@@ -102,7 +71,7 @@ class SongApp(QWidget):
 
             if new_cache:
                 md5_cache.update(new_cache)
-                self.save_md5_cache(md5_cache)
+                FileHandler.save_md5_cache(md5_cache)
 
             return {int(k): self.validate_state(v) for k, v in states.items()}
 
@@ -135,8 +104,8 @@ class SongApp(QWidget):
             3: QCheckBox("完美无瑕")
         }
 
-        for cb in self.state_filters.values():
-            cb.setChecked(True)
+        for key, cb in self.state_filters.items():
+            cb.setChecked(self.btn_status['data'][key])
             cb.stateChanged.connect(self.update_visibility)
             status_layout.addWidget(cb)
 
@@ -153,7 +122,6 @@ class SongApp(QWidget):
         scroll_area.setWidget(self.scroll_content)
 
         main_layout.addWidget(scroll_area)
-        self.update_visibility()
 
     def create_all_widgets(self):
         # 按难度分组创建控件
@@ -270,6 +238,7 @@ class SongApp(QWidget):
         return download_btn
 
     def update_visibility(self):
+        """更新歌曲列表的可见性"""
         visible_groups = set()
         active_states = [state for state, cb in self.state_filters.items() if cb.isChecked()]
 
@@ -294,7 +263,12 @@ class SongApp(QWidget):
                 self.scroll_layout.insertWidget(0, empty_label)
             empty_label.show()
         elif empty_label:
-            empty_label.hide()
+            if empty_label:
+                empty_label.hide()
+
+        # 保存状态
+        self.btn_status = {'data': [cb.isChecked() for state, cb in self.state_filters.items()]}
+        FileHandler.save_status_data(self.btn_status)
 
     @staticmethod
     def open_url(url):
@@ -306,11 +280,13 @@ class SongApp(QWidget):
         event.accept()
 
     def changeEvent(self, event):
+        """当窗口最小化或恢复时重新加载状态"""
         if event.type() == 99:
             self.song_states = self.load_song_states()
             for song_id, song_state in self.song_states.items():
                 if song_id in self.song_widgets:
                     self.song_widgets[song_id]['status'].setCurrentIndex(song_state)
+            self.update_visibility()
         super().changeEvent(event)
 
 

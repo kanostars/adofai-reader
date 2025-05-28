@@ -172,3 +172,5 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+/resource/workshop_md5_map.json
+/resource/status.json
