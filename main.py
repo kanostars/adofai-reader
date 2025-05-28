@@ -35,7 +35,6 @@ class SongApp(QWidget):
         self.init_ui()
         self.create_all_widgets()
 
-
     def load_song_states(self):
         """加载歌曲状态数据"""
         try:
@@ -59,34 +58,25 @@ class SongApp(QWidget):
                 completion = cd.get(f'CustomWorld_{md5}_Completion')
                 x_accuracy = cd.get(f'CustomWorld_{md5}_XAccuracy')
                 if completion is None:
-                    states[song['id']] = 0  # 未玩过
+                    states[song['id']] = (0, 0)  # 未玩过
                     continue
                 if completion < 1:
-                    states[song['id']] = 1  # 进行中
+                    states[song['id']] = (1, completion)  # 进行中
                     continue
                 if x_accuracy >= 1:
-                    states[song['id']] = 3  # 完美无暇
+                    states[song['id']] = (3, 0)  # 完美无暇
                     continue
-                states[song['id']] = 2  # 完成
+                states[song['id']] = (2, x_accuracy)  # 完成
 
             if new_cache:
                 md5_cache.update(new_cache)
                 FileHandler.save_md5_cache(md5_cache)
 
-            return {int(k): self.validate_state(v) for k, v in states.items()}
+            return {int(k): v for k, v in states.items()}
 
         except (FileNotFoundError, ValueError) as e:
             logging.error("无法加载自定义数据文件", e)
             return {}
-
-    @staticmethod
-    def validate_state(value):
-        """确保状态值在0-3之间, 0:未玩过；1：进行中；2：已完成；3：完美无暇"""
-        try:
-            state = int(value)
-            return max(0, min(state, 3))
-        except ValueError:
-            return 0
 
     def init_ui(self):
         main_layout = QVBoxLayout(self)
@@ -129,7 +119,7 @@ class SongApp(QWidget):
         for song in self.songs:
             # 初始化未记录歌曲的状态
             if song['id'] not in self.song_states:
-                self.song_states[song['id']] = 0
+                self.song_states[song['id']] = (0, 0)
 
             diff = song.get("difficulty", 0)
             songs_by_difficulty.setdefault(diff, []).append(song)
@@ -150,20 +140,22 @@ class SongApp(QWidget):
                 name_label = self.create_name_label(song)
                 creators_label = self.create_creators_label(song)
                 download_btn = self.create_download_button(song)
-                status_combo = self.create_status_combobox(song)
+                status_label = self.create_status_label()
+                status_type = 0
 
                 # 存储控件引用
                 self.song_widgets[song['id']] = {
                     'widget': row_widget,
-                    'status': status_combo,
-                    'difficulty': difficulty
+                    'difficulty': difficulty,
+                    'status_type': status_type,
+                    'status_label': status_label
                 }
 
                 # 添加布局元素
                 row_layout.addWidget(name_label)
                 row_layout.addWidget(creators_label)
                 row_layout.addWidget(download_btn)
-                row_layout.addWidget(status_combo)
+                row_layout.addWidget(status_label)
 
                 group_layout.addWidget(row_widget)
 
@@ -187,10 +179,17 @@ class SongApp(QWidget):
 
         combo = QComboBox()
         combo.addItems(states.values())
-        combo.setCurrentIndex(self.song_states.get(song['id'], 0))
         combo.setEnabled(False)
         combo.setFixedWidth(100)
         return combo
+
+    @staticmethod
+    def create_status_label():
+        """创建状态标签"""
+        label = QLabel('未玩过')
+        label.setFixedWidth(100)
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        return label
 
     @staticmethod
     def create_name_label(song):
@@ -243,7 +242,7 @@ class SongApp(QWidget):
         active_states = [state for state, cb in self.state_filters.items() if cb.isChecked()]
 
         for song_id, widget_info in self.song_widgets.items():
-            current_state = self.song_states.get(song_id, 0)
+            current_state = self.song_states.get(song_id, (0, 0))[0]
             is_visible = current_state in active_states
 
             if is_visible:
@@ -270,6 +269,24 @@ class SongApp(QWidget):
         self.btn_status = {'data': [cb.isChecked() for state, cb in self.state_filters.items()]}
         FileHandler.save_status_data(self.btn_status)
 
+    def refresh_song_states(self):
+        """刷新歌曲状态"""
+        for song_id, widget_info in self.song_widgets.items():
+            if song_id in self.song_states:
+                status, process = self.song_states[song_id]
+                text = '未玩过'
+                if status == 1:
+                    text = f'process: {process * 100: .2f}%'
+                    widget_info['status_label'].setStyleSheet("color: qlineargradient(x1: 0, y1: 0,    x2: 1, y2: 1,    stop: 0 #66e, stop: 1 #007FFF);")
+                elif status == 2:
+                    text = f'x_a: {process * 100: .2f}%'
+                    widget_info['status_label'].setStyleSheet("color: qlineargradient(x1: 0, y1: 0,    x2: 1, y2: 1,    stop: 0 #66e, stop: 1 #FFD700);")
+                elif status == 3:
+                    text = '完美无瑕'
+                    widget_info['status_label'].setStyleSheet("color: qlineargradient(x1: 0, y1: 0,    x2: 1, y2: 1,    stop: 0 #66e, stop: 1 #fd3e7f);")
+                widget_info['status_type'] = status
+                widget_info['status_label'].setText(text)
+
     @staticmethod
     def open_url(url):
         if url and url.startswith(("http://", "https://")):
@@ -283,9 +300,8 @@ class SongApp(QWidget):
         """当窗口最小化或恢复时重新加载状态"""
         if event.type() == 99:
             self.song_states = self.load_song_states()
-            for song_id, song_state in self.song_states.items():
-                if song_id in self.song_widgets:
-                    self.song_widgets[song_id]['status'].setCurrentIndex(song_state)
+            self.refresh_song_states()
+
             self.update_visibility()
         super().changeEvent(event)
 
