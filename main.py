@@ -168,21 +168,6 @@ class SongApp(QWidget):
                                                      QSizePolicy.Policy.Minimum,
                                                      QSizePolicy.Policy.Expanding))
 
-    def create_status_combobox(self, song):
-        """创建状态下拉框（替换原来的复选框）"""
-        states = {
-            0: "未玩过",
-            1: "进行中",
-            2: "已完成",
-            3: "完美无瑕"
-        }
-
-        combo = QComboBox()
-        combo.addItems(states.values())
-        combo.setEnabled(False)
-        combo.setFixedWidth(100)
-        return combo
-
     @staticmethod
     def create_status_label():
         """创建状态标签"""
