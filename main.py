@@ -32,6 +32,8 @@ class SongApp(QWidget):
         self.group_boxes = {}
         self.song_widgets = {}
 
+        self.rks_label = None
+
         self.init_ui()
         self.create_all_widgets()
 
@@ -100,6 +102,9 @@ class SongApp(QWidget):
             status_layout.addWidget(cb)
 
         status_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
+
+        self.rks_label = QLabel("RKS: 0")
+        status_layout.addWidget(self.rks_label)
 
         main_layout.addLayout(status_layout)
 
@@ -256,21 +261,32 @@ class SongApp(QWidget):
 
     def refresh_song_states(self):
         """刷新歌曲状态"""
+        rks_list = []
         for song_id, widget_info in self.song_widgets.items():
             if song_id in self.song_states:
                 status, process = self.song_states[song_id]
                 text = '未玩过'
+                difficulty = widget_info['difficulty']
                 if status == 1:
                     text = f'process: {process * 100: .2f}%'
                     widget_info['status_label'].setStyleSheet("color: qlineargradient(x1: 0, y1: 0,    x2: 1, y2: 1,    stop: 0 #66e, stop: 1 #007FFF);")
                 elif status == 2:
                     text = f'x_a: {process * 100: .2f}%'
                     widget_info['status_label'].setStyleSheet("color: qlineargradient(x1: 0, y1: 0,    x2: 1, y2: 1,    stop: 0 #66e, stop: 1 #FFD700);")
+                    rks_list.append(difficulty * process * process)
                 elif status == 3:
                     text = '完美无瑕'
                     widget_info['status_label'].setStyleSheet("color: qlineargradient(x1: 0, y1: 0,    x2: 1, y2: 1,    stop: 0 #66e, stop: 1 #fd3e7f);")
+                    rks_list.append(difficulty)
                 widget_info['status_type'] = status
                 widget_info['status_label'].setText(text)
+        average = 0
+        if rks_list:
+            sorted_rks_list = sorted(rks_list, reverse=True)
+            top_20 = sorted_rks_list[:20]
+            average = sum(top_20) / len(top_20)
+
+        self.rks_label.setText(f'RKS: {average:.2f}')
 
     @staticmethod
     def open_url(url):
