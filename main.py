@@ -264,16 +264,16 @@ class SongApp(QWidget):
         rks_list = []
         for song_id, widget_info in self.song_widgets.items():
             if song_id in self.song_states:
-                status, process = self.song_states[song_id]
+                status, progress = self.song_states[song_id]
                 text = '未玩过'
                 difficulty = widget_info['difficulty']
                 if status == 1:
-                    text = f'process: {process * 100: .2f}%'
+                    text = f'progress: {progress * 100: .2f}%'
                     widget_info['status_label'].setStyleSheet("color: qlineargradient(x1: 0, y1: 0,    x2: 1, y2: 1,    stop: 0 #66e, stop: 1 #007FFF);")
                 elif status == 2:
-                    text = f'x_a: {process * 100: .2f}%'
+                    text = f'x_a: {progress * 100: .2f}%'
                     widget_info['status_label'].setStyleSheet("color: qlineargradient(x1: 0, y1: 0,    x2: 1, y2: 1,    stop: 0 #66e, stop: 1 #FFD700);")
-                    rks_list.append(difficulty * process * process)
+                    rks_list.append(difficulty * progress * progress)
                 elif status == 3:
                     text = '完美无瑕'
                     widget_info['status_label'].setStyleSheet("color: qlineargradient(x1: 0, y1: 0,    x2: 1, y2: 1,    stop: 0 #66e, stop: 1 #fd3e7f);")
