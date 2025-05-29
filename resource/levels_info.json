@@ -2329,22 +2329,6 @@
         "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=3407149988"
     },
     {
-        "id": 2073,
-        "name": "Excelsia",
-        "difficulty": 6,
-        "music": {
-            "name": "Excelsia",
-            "artists": [
-                "ak+q"
-            ]
-        },
-        "creators": [
-            "HHAWM"
-        ],
-        "maxBpm": 0,
-        "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2565937533"
-    },
-    {
         "id": 1104,
         "name": "マージナル＊フロンティア",
         "difficulty": 7,
