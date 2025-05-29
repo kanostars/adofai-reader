@@ -283,8 +283,7 @@ class SongApp(QWidget):
         average = 0
         if rks_list:
             sorted_rks_list = sorted(rks_list, reverse=True)
-            top_20 = sorted_rks_list[:20]
-            average = sum(top_20) / len(top_20)
+            average = sum(sorted_rks_list[:20]) / 20
 
         self.rks_label.setText(f'RKS: {average:.2f}')
 
