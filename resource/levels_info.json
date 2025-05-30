@@ -4063,22 +4063,6 @@
         "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2254414088"
     },
     {
-        "id": 2319,
-        "name": "Terrasphere (Orgel ver.)",
-        "difficulty": 8,
-        "music": {
-            "name": "Terrasphere (Orgel ver.)",
-            "artists": [
-                "Plum"
-            ]
-        },
-        "creators": [
-            "Ara"
-        ],
-        "maxBpm": 120,
-        "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2554200287"
-    },
-    {
         "id": 1393,
         "name": "Friendship!",
         "difficulty": 8,
