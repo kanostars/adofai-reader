@@ -4031,22 +4031,6 @@
         "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2635105765"
     },
     {
-        "id": 2344,
-        "name": "Terrasphere",
-        "difficulty": 8,
-        "music": {
-            "name": "Terrasphere",
-            "artists": [
-                "Plum"
-            ]
-        },
-        "creators": [
-            "Parku"
-        ],
-        "maxBpm": 0,
-        "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2623498603"
-    },
-    {
         "id": 400,
         "name": "Hyper",
         "difficulty": 8,
