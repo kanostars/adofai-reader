@@ -1,6 +1,6 @@
-from PyQt6.QtCore import Qt, QUrl
-from PyQt6.QtGui import QFontMetrics, QDesktopServices
-from PyQt6.QtWidgets import QComboBox, QLabel, QPushButton, QCheckBox
+from PyQt6.QtCore import Qt, QUrl, QRect, pyqtSignal
+from PyQt6.QtGui import QFontMetrics, QDesktopServices, QPainter
+from PyQt6.QtWidgets import QComboBox, QLabel, QPushButton, QCheckBox, QStyle
 
 
 class FilterCheckBox(QCheckBox):
@@ -23,8 +23,62 @@ class ComboBox(QComboBox):
     """
     用于排序的下拉框
     """
+    sort_change_event = pyqtSignal()
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.sort_order = False
+        self.button_width = 20
+
+
     def wheelEvent(self, event):
         event.ignore()
+
+    def paintEvent(self, event):
+        """重写绘制事件：添加方向图标"""
+        super().paintEvent(event)
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        # 计算按钮区域（右侧固定宽度）
+        button_rect = QRect(
+            self.width() - self.button_width,
+            0,
+            self.button_width,
+            self.height()
+        )
+
+        # 绘制方向图标（↑/↓）
+        icon = self.style().standardIcon(
+            QStyle.StandardPixmap.SP_ArrowUp if self.sort_order else QStyle.StandardPixmap.SP_ArrowDown
+        )
+        icon_size = icon.actualSize(button_rect.size())
+        icon_rect = QRect(
+            button_rect.center().x() - icon_size.width() // 2,
+            button_rect.center().y() - icon_size.height() // 2,
+            icon_size.width(),
+            icon_size.height()
+        )
+        icon.paint(painter, icon_rect)
+
+    def mousePressEvent(self, event):
+        """重写鼠标点击事件：区分按钮点击和本体点击"""
+        # 计算按钮区域
+        button_rect = QRect(
+            self.width() - self.button_width,
+            0,
+            self.button_width,
+            self.height()
+        )
+
+        if button_rect.contains(event.pos()):
+            # 点击按钮：切换排序方向
+            self.sort_order = not self.sort_order
+            self.update()  # 刷新图标
+            self.currentIndexChanged.emit(self.currentIndex())  # 触发排序更新
+            self.sort_change_event.emit()
+        else:
+            # 点击本体：显示下拉列表
+            super().mousePressEvent(event)
 
 
 class StatusLabel(QLabel):
