@@ -88,6 +88,7 @@ class SongApp(QWidget):
         status_layout = QHBoxLayout()
         status_layout.addWidget(QLabel("显示状态:"))
 
+
         # 添加更多筛选选项
         self.state_filters = {
             0: QCheckBox("未玩过"),
@@ -100,9 +101,11 @@ class SongApp(QWidget):
             cb.setChecked(self.btn_status['data'][key])
             cb.stateChanged.connect(self.update_visibility)
             status_layout.addWidget(cb)
+        self.count_label = QLabel("歌曲: 0")
+        status_layout.addWidget(self.count_label)
 
+        status_layout.addWidget(self.rks_label)
         status_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
-
         self.rks_label = QLabel("RKS: 0")
         status_layout.addWidget(self.rks_label)
 
@@ -228,6 +231,7 @@ class SongApp(QWidget):
 
     def update_visibility(self):
         """更新歌曲列表的可见性"""
+        visible_count = 0
         visible_groups = set()
         active_states = [state for state, cb in self.state_filters.items() if cb.isChecked()]
 
@@ -236,8 +240,11 @@ class SongApp(QWidget):
             is_visible = current_state in active_states
 
             if is_visible:
+                visible_count += 1
                 visible_groups.add(widget_info['difficulty'])
             widget_info['widget'].setVisible(is_visible)
+
+        self.count_label.setText(f"歌曲: {visible_count}")
 
         # 更新分组可见性
         for diff, group_box in self.group_boxes.items():
