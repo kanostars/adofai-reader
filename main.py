@@ -1,16 +1,15 @@
 import logging
 import sys
 
-from PyQt6.QtCore import Qt, QUrl
-from PyQt6.QtGui import QDesktopServices, QFontMetrics
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton, QCheckBox, QGroupBox,
-    QScrollArea, QSizePolicy, QSpacerItem, QComboBox
+    QGroupBox,
+    QScrollArea, QSizePolicy, QSpacerItem
 )
 
 import FileHandler
 from MD5Handler import generate_md5
+from widget import *
 
 
 class SongApp(QWidget):
@@ -30,8 +29,11 @@ class SongApp(QWidget):
         self.song_states = self.load_song_states()
         self.btn_status = FileHandler.load_status_data()
         self.group_boxes = {}
-        self.song_widgets = {}
+        self.song_widgets = []
 
+        self.scroll_layout = None
+        self.state_filters = None
+        self.count_label = None
         self.rks_label = None
 
         self.init_ui()
@@ -91,16 +93,16 @@ class SongApp(QWidget):
 
         # 添加更多筛选选项
         self.state_filters = {
-            0: QCheckBox("未玩过"),
-            1: QCheckBox("进行中"),
-            2: QCheckBox("已完成"),
-            3: QCheckBox("完美无瑕")
+            0: FilterCheckBox(status_layout, text='未玩过', checked=self.btn_status['data'][0], change_connect=self.update_visibility),
+            1: FilterCheckBox(status_layout, text='进行中', checked=self.btn_status['data'][1], change_connect=self.update_visibility),
+            2: FilterCheckBox(status_layout, text='已完成', checked=self.btn_status['data'][2], change_connect=self.update_visibility),
+            3: FilterCheckBox(status_layout, text='完美无瑕', checked=self.btn_status['data'][3], change_connect=self.update_visibility)
         }
 
-        for key, cb in self.state_filters.items():
-            cb.setChecked(self.btn_status['data'][key])
-            cb.stateChanged.connect(self.update_visibility)
-            status_layout.addWidget(cb)
+        sort_com = ComboBox()
+        sort_com.addItems(["难度", "歌曲名"])
+        status_layout.addWidget(sort_com)
+
         self.count_label = QLabel("歌曲: 0")
         status_layout.addWidget(self.count_label)
 
@@ -114,10 +116,10 @@ class SongApp(QWidget):
         # 可滚动区域
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
-        self.scroll_content = QWidget()
-        self.scroll_layout = QVBoxLayout(self.scroll_content)
+        scroll_content = QWidget()
+        self.scroll_layout = QVBoxLayout(scroll_content)
         self.scroll_layout.setContentsMargins(5, 5, 5, 5)
-        scroll_area.setWidget(self.scroll_content)
+        scroll_area.setWidget(scroll_content)
 
         main_layout.addWidget(scroll_area)
 
@@ -145,19 +147,21 @@ class SongApp(QWidget):
                 row_layout.setSpacing(10)
 
                 # 创建界面元素
-                name_label = self.create_name_label(song)
-                creators_label = self.create_creators_label(song)
-                download_btn = self.create_download_button(song)
-                status_label = self.create_status_label()
+                name_label = NameLabel(text=song["music"]["name"])
+                creators_label = ArtistsLabel(text=", ".join(song["music"]["artists"]))
+                download_btn = DownloadButton(url=song["workshopUrl"])
+                status_label = StatusLabel()
                 status_type = 0
 
                 # 存储控件引用
-                self.song_widgets[song['id']] = {
+                self.song_widgets.append({
+                    'id': song['id'],
+                    'name': song['name'],
                     'widget': row_widget,
                     'difficulty': difficulty,
                     'status_type': status_type,
                     'status_label': status_label
-                }
+                })
 
                 # 添加布局元素
                 row_layout.addWidget(name_label)
@@ -176,66 +180,16 @@ class SongApp(QWidget):
                                                      QSizePolicy.Policy.Minimum,
                                                      QSizePolicy.Policy.Expanding))
 
-    @staticmethod
-    def create_status_label():
-        """创建状态标签"""
-        label = QLabel('未玩过')
-        label.setFixedWidth(100)
-        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        return label
-
-    @staticmethod
-    def create_name_label(song):
-        """创建歌曲名称标签"""
-        name_label = QLabel(song["music"]["name"])
-        name_label.setToolTip(song["music"]["name"])
-        name_label.setMinimumWidth(50)
-        name_label.setFixedWidth(220)
-        name_label.setStyleSheet("""
-                   QLabel {
-                       padding-right: 5px;
-                       qproperty-alignment: AlignLeft;
-                   }
-               """)
-        fm = QFontMetrics(name_label.font())
-        elided_name = fm.elidedText(song["music"]["name"], Qt.TextElideMode.ElideRight, 220)
-        name_label.setText(elided_name)
-        return name_label
-
-    @staticmethod
-    def create_creators_label(song):
-        """创建创作者标签"""
-        creators = ", ".join(song["music"]["artists"])
-        creators_label = QLabel(creators)
-        creators_label.setFixedWidth(190)
-        creators_label.setToolTip(creators)
-        creators_label.setStyleSheet("""
-                   QLabel {
-                       padding-right: 5px;
-                       qproperty-alignment: AlignLeft;
-                   }
-               """)
-        fm = QFontMetrics(creators_label.font())
-        elided_creators = fm.elidedText(creators, Qt.TextElideMode.ElideRight, 150)
-        creators_label.setText(elided_creators)
-        return creators_label
-
-    def create_download_button(self, song):
-        """创建下载按钮"""
-        download_btn = QPushButton("下载")
-        download_btn.setFixedWidth(70)
-        download_btn.clicked.connect(
-            lambda _, url=song.get("workshopUrl"): self.open_url(url)
-        )
-        return download_btn
-
     def update_visibility(self):
         """更新歌曲列表的可见性"""
         visible_count = 0
         visible_groups = set()
         active_states = [state for state, cb in self.state_filters.items() if cb.isChecked()]
 
-        for song_id, widget_info in self.song_widgets.items():
+        self.song_widgets = sorted(self.song_widgets, key=lambda song_info: song_info['name'] , reverse=True)
+
+        for widget_info in self.song_widgets:
+            song_id = widget_info['id']
             current_state = self.song_states.get(song_id, (0, 0))[0]
             is_visible = current_state in active_states
 
@@ -255,7 +209,7 @@ class SongApp(QWidget):
         if not visible_groups:
             if not empty_label:
                 empty_label = QLabel("没有符合条件的歌曲")
-                self._empty_label = empty_label
+                setattr(self, '_empty_label', empty_label)
                 self.scroll_layout.insertWidget(0, empty_label)
             empty_label.show()
         elif empty_label:
@@ -269,7 +223,8 @@ class SongApp(QWidget):
     def refresh_song_states(self):
         """刷新歌曲状态"""
         rks_list = []
-        for song_id, widget_info in self.song_widgets.items():
+        for widget_info in self.song_widgets:
+            song_id = widget_info['id']
             if song_id in self.song_states:
                 status, progress = self.song_states[song_id]
                 text = '未玩过'
@@ -293,11 +248,6 @@ class SongApp(QWidget):
             average = sum(sorted_rks_list[:20]) / 20
 
         self.rks_label.setText(f'RKS: {average:.2f}')
-
-    @staticmethod
-    def open_url(url):
-        if url and url.startswith(("http://", "https://")):
-            QDesktopServices.openUrl(QUrl(url))
 
     def closeEvent(self, event):
         """窗口关闭时确保保存最后状态"""
