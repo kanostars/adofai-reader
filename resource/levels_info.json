@@ -2493,22 +2493,6 @@
         "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2837365706"
     },
     {
-        "id": 3915,
-        "name": "Prominence",
-        "difficulty": 7,
-        "music": {
-            "name": "Prominence",
-            "artists": [
-                "Plum"
-            ]
-        },
-        "creators": [
-            "Peridot"
-        ],
-        "maxBpm": 0,
-        "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2812721686"
-    },
-    {
         "id": 1945,
         "name": "Classy Kitty",
         "difficulty": 7,
