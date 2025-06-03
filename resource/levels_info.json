@@ -8043,22 +8043,6 @@
         "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2655300425"
     },
     {
-        "id": 4301,
-        "name": "비 온 뒤 맑음",
-        "difficulty": 15,
-        "music": {
-            "name": "비 온 뒤 맑음",
-            "artists": [
-                "Plum"
-            ]
-        },
-        "creators": [
-            "바당"
-        ],
-        "maxBpm": 240,
-        "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2852944222"
-    },
-    {
         "id": 686,
         "name": "Comet (Game Edit)",
         "difficulty": 15,
