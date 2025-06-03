@@ -101,13 +101,32 @@ class SongApp(QWidget):
         status_layout = QHBoxLayout()
         status_layout.addWidget(QLabel("显示状态:"))
 
-
         # 添加更多筛选选项
         self.state_filters = {
-            0: FilterCheckBox(status_layout, text='未玩过', checked=self.btn_status['data'][0], change_connect=self.update_visibility),
-            1: FilterCheckBox(status_layout, text='进行中', checked=self.btn_status['data'][1], change_connect=self.update_visibility),
-            2: FilterCheckBox(status_layout, text='已完成', checked=self.btn_status['data'][2], change_connect=self.update_visibility),
-            3: FilterCheckBox(status_layout, text='完美无瑕', checked=self.btn_status['data'][3], change_connect=self.update_visibility)
+            0: FilterCheckBox(
+                status_layout,
+                text='未玩过',
+                checked=self.btn_status['data'][0],
+                change_connect=self.update_visibility
+            ),
+            1: FilterCheckBox(
+                status_layout,
+                text='进行中',
+                checked=self.btn_status['data'][1],
+                change_connect=self.update_visibility
+            ),
+            2: FilterCheckBox(
+                status_layout,
+                text='已完成',
+                checked=self.btn_status['data'][2],
+                change_connect=self.update_visibility
+            ),
+            3: FilterCheckBox(
+                status_layout,
+                text='完美无瑕',
+                checked=self.btn_status['data'][3],
+                change_connect=self.update_visibility
+            )
         }
 
         self.sort_com = ComboBox()
@@ -273,15 +292,21 @@ class SongApp(QWidget):
             difficulty = widget_info['difficulty']
             if status == 1:
                 text = f'progress: {progress * 100: .2f}%'
-                widget_info['status_label'].setStyleSheet("color: qlineargradient(x1: 0, y1: 0,    x2: 1, y2: 1,    stop: 0 #66e, stop: 1 #007FFF);")
+                widget_info['status_label'].setStyleSheet(
+                    "color: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 1, stop: 0 #66e, stop: 1 #007FFF);"
+                )
             elif status == 2:
                 text = f'x_a: {progress * 100: .2f}%'
-                widget_info['status_label'].setStyleSheet("color: qlineargradient(x1: 0, y1: 0,    x2: 1, y2: 1,    stop: 0 #66e, stop: 1 #FFD700);")
+                widget_info['status_label'].setStyleSheet(
+                    "color: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 1, stop: 0 #66e, stop: 1 #FFD700);"
+                )
                 widget_info['status_label'].setToolTip(f'rks: {difficulty * progress * progress:.2f}')
                 rks_list.append(difficulty * progress * progress)
             elif status == 3:
                 text = '完美无瑕'
-                widget_info['status_label'].setStyleSheet("color: qlineargradient(x1: 0, y1: 0,    x2: 1, y2: 1,    stop: 0 #66e, stop: 1 #fd3e7f);")
+                widget_info['status_label'].setStyleSheet(
+                    "color: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 1, stop: 0 #66e, stop: 1 #fd3e7f);"
+                )
                 widget_info['status_label'].setToolTip(f'rks: {difficulty:.2f}')
                 rks_list.append(difficulty)
             widget_info['status_label'].setText(text)
@@ -291,10 +316,6 @@ class SongApp(QWidget):
             average = sum(sorted_rks_list[:20]) / 20
 
         self.rks_label.setText(f'RKS: {average:.2f}')
-
-    def closeEvent(self, event):
-        """窗口关闭时确保保存最后状态"""
-        event.accept()
 
     def changeEvent(self, event):
         """当窗口最小化或恢复时重新加载状态"""

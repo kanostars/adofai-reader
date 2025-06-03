@@ -7,6 +7,7 @@ class FilterCheckBox(QCheckBox):
     """
     用于筛选的复选框
     """
+
     def __init__(self, parent=None, text=None, checked=True, change_connect=None):
         super().__init__(None)
 
@@ -51,17 +52,16 @@ class FilterCheckBox(QCheckBox):
         super().leaveEvent(event)
 
 
-
 class ComboBox(QComboBox):
     """
     用于排序的下拉框
     """
     sort_change_event = pyqtSignal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.sort_order = False
         self.button_width = 20
-
 
     def wheelEvent(self, event):
         event.ignore()
@@ -95,7 +95,6 @@ class ComboBox(QComboBox):
 
     def mousePressEvent(self, event):
         """重写鼠标点击事件：区分按钮点击和本体点击"""
-        # 计算按钮区域
         button_rect = QRect(
             self.width() - self.button_width,
             0,
@@ -118,6 +117,7 @@ class SearchEntry(QLineEdit):
     """
     搜索框
     """
+
     def __init__(self, parent=None, initial_width=40, expanded_width=80):
         super().__init__(parent)
         # 基础设置
@@ -156,6 +156,7 @@ class StatusLabel(QLabel):
     """
     歌曲状态标签
     """
+
     def __init__(self, parent=None, flags=None):
         super().__init__(parent, flags)
 
@@ -168,6 +169,7 @@ class NameLabel(QLabel):
     """
     歌曲名称标签
     """
+
     def __init__(self, parent=None, flags=None, text=None):
         super().__init__(parent, flags)
 
@@ -179,10 +181,12 @@ class NameLabel(QLabel):
         elided_name = fm.elidedText(text, Qt.TextElideMode.ElideRight, 220)
         self.setText(elided_name)
 
+
 class ArtistsLabel(QLabel):
     """
     歌曲作者标签
     """
+
     def __init__(self, parent=None, flags=None, text=None):
         super().__init__(parent, flags)
 
@@ -198,6 +202,7 @@ class DownloadButton(QPushButton):
     """
     歌曲下载按钮
     """
+
     def __init__(self, parent=None, flags=None, url=None):
         super().__init__(parent, flags)
 
