@@ -1,6 +1,6 @@
-from PyQt6.QtCore import Qt, QUrl, QRect, pyqtSignal
+from PyQt6.QtCore import Qt, QUrl, QRect, pyqtSignal, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QFontMetrics, QDesktopServices, QPainter
-from PyQt6.QtWidgets import QComboBox, QLabel, QPushButton, QCheckBox, QStyle
+from PyQt6.QtWidgets import QComboBox, QLabel, QPushButton, QCheckBox, QStyle, QLineEdit
 
 
 class FilterCheckBox(QCheckBox):
@@ -16,6 +16,39 @@ class FilterCheckBox(QCheckBox):
             self.stateChanged.connect(change_connect)
         if parent:
             parent.addWidget(self)
+
+        fm = QFontMetrics(self.font())
+        self.text_width = fm.horizontalAdvance(text)  # 文字内容宽度
+        style = self.style()
+        # 获取勾选框宽度和默认间距（根据当前样式）
+        self.checkbox_width = style.pixelMetric(QStyle.PixelMetric.PM_IndicatorWidth)
+        self.spacing = style.pixelMetric(QStyle.PixelMetric.PM_CheckBoxLabelSpacing)
+        # 初始宽度
+        self.initial_width = self.checkbox_width + self.spacing
+        # 展开宽度
+        self.expanded_width = self.initial_width + self.text_width + self.spacing
+
+        # 初始化固定宽度为初始状态
+        self.setFixedWidth(self.initial_width)
+
+        # 初始化动画（使用minimumWidth属性实现平滑过渡）
+        self.animation = QPropertyAnimation(self, b"minimumWidth")
+        self.animation.setDuration(200)  # 200ms动画时长
+        self.animation.setEasingCurve(QEasingCurve.Type.InOutQuad)  # 缓动效果
+
+    def enterEvent(self, event):
+        """鼠标进入时展开宽度"""
+        self.animation.setStartValue(self.minimumWidth())
+        self.animation.setEndValue(self.expanded_width)
+        self.animation.start()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        """鼠标离开时收缩宽度"""
+        self.animation.setStartValue(self.minimumWidth())
+        self.animation.setEndValue(self.initial_width)
+        self.animation.start()
+        super().leaveEvent(event)
 
 
 
@@ -79,6 +112,44 @@ class ComboBox(QComboBox):
         else:
             # 点击本体：显示下拉列表
             super().mousePressEvent(event)
+
+
+class SearchEntry(QLineEdit):
+    """
+    搜索框
+    """
+    def __init__(self, parent=None, initial_width=40, expanded_width=80):
+        super().__init__(parent)
+        # 基础设置
+        self.setPlaceholderText("搜索")
+        self.setClearButtonEnabled(True)
+
+        # 宽度参数（可通过参数自定义）
+        self.setFixedWidth(initial_width)
+        self.initial_width = initial_width  # 闲置时宽度
+        self.expanded_width = expanded_width  # 聚焦时宽度
+        self.setMinimumWidth(self.initial_width)  # 初始最小宽度
+
+        # 初始化动画（使用minimumWidth属性实现平滑过渡）
+        self.animation = QPropertyAnimation(self, b"minimumWidth")
+        self.animation.setDuration(200)  # 200ms动画时长
+        self.animation.setEasingCurve(QEasingCurve.Type.InOutQuad)  # 缓动效果
+
+    def focusInEvent(self, event):
+        """获得焦点时展开宽度"""
+        self.setClearButtonEnabled(True)
+        self.animation.setStartValue(self.minimumWidth())
+        self.animation.setEndValue(self.expanded_width)
+        self.animation.start()
+        super().focusInEvent(event)
+
+    def focusOutEvent(self, event):
+        """失去焦点时收缩宽度"""
+        self.setClearButtonEnabled(False)
+        self.animation.setStartValue(self.minimumWidth())
+        self.animation.setEndValue(self.initial_width)
+        self.animation.start()
+        super().focusOutEvent(event)
 
 
 class StatusLabel(QLabel):

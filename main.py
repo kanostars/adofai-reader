@@ -33,6 +33,7 @@ class SongApp(QWidget):
         self.song_widgets = []
 
         self.sort_com = None
+        self.search_entry = None
         self.scroll_layout = None
         self.state_filters = None
         self.count_label = None
@@ -120,6 +121,10 @@ class SongApp(QWidget):
         self.sort_com.sort_change_event.connect(self.update_visibility)
         status_layout.addWidget(self.sort_com)
 
+        self.search_entry = SearchEntry()
+        self.search_entry.textChanged.connect(self.update_visibility)
+        status_layout.addWidget(self.search_entry)
+
         self.count_label = QLabel("歌曲: 0")
         status_layout.addWidget(self.count_label)
 
@@ -198,6 +203,7 @@ class SongApp(QWidget):
     def update_visibility(self):
         """更新歌曲列表的可见性（含分组控制）"""
         visible_count = 0
+        search_text = self.search_entry.text()
         active_states = [state for state, cb in self.state_filters.items() if cb.isChecked()]
         current_sort = self.sort_com.currentText()
         sort_order = self.sort_com.sort_order
@@ -220,7 +226,8 @@ class SongApp(QWidget):
         # 处理歌曲行可见性及布局
         for idx, widget_info in enumerate(sorted_widgets):
             current_state = widget_info['status'][0]
-            is_visible = current_state in active_states
+            widget_text = widget_info['name'] + '\t' + widget_info['artists']
+            is_visible = current_state in active_states and search_text.lower() in widget_text.lower()
             widget_info['widget'].setVisible(is_visible)
 
             if is_visible:
