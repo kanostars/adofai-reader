@@ -56,7 +56,6 @@ class ComboBox(QComboBox):
     """
     用于排序的下拉框
     """
-    sort_change_event = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -106,8 +105,7 @@ class ComboBox(QComboBox):
             # 点击按钮：切换排序方向
             self.sort_order = not self.sort_order
             self.update()  # 刷新图标
-            self.currentIndexChanged.emit(self.currentIndex())  # 触发排序更新
-            self.sort_change_event.emit()
+            self.currentIndexChanged.emit(self.currentIndex())
         else:
             # 点击本体：显示下拉列表
             super().mousePressEvent(event)

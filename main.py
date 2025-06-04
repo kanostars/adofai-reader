@@ -136,8 +136,7 @@ class SongApp(QWidget):
             SortEnum.ARTISTS,
             SortEnum.RKS
         ])
-        self.sort_com.currentIndexChanged.connect(self.update_visibility)
-        self.sort_com.sort_change_event.connect(self.update_visibility)
+        self.sort_com.currentIndexChanged.connect(self.update_sorted_list)
         status_layout.addWidget(self.sort_com)
 
         self.search_entry = SearchEntry()
@@ -219,11 +218,8 @@ class SongApp(QWidget):
                                                      QSizePolicy.Policy.Minimum,
                                                      QSizePolicy.Policy.Expanding))
 
-    def update_visibility(self):
-        """更新歌曲列表的可见性（含分组控制）"""
-        visible_count = 0
-        search_text = self.search_entry.text()
-        active_states = [state for state, cb in self.state_filters.items() if cb.isChecked()]
+    def update_sorted_list(self):
+        """ 更新歌曲列表的排序 """
         current_sort = self.sort_com.currentText()
         sort_order = self.sort_com.sort_order
 
@@ -238,12 +234,48 @@ class SongApp(QWidget):
             current_sort = SortEnum.DIFFICULTY
             sorted_widgets = sorted(self.song_widgets, key=lambda x: x['difficulty'], reverse=sort_order)
 
+        # 处理歌曲行可见性及布局
+        for idx, widget_info in enumerate(sorted_widgets):
+
+            if current_sort == SortEnum.DIFFICULTY:
+                group_box = self.group_boxes[widget_info['difficulty']]
+                group_layout = group_box.layout()
+                old_pos = group_layout.indexOf(widget_info['widget'])
+                if old_pos != -1:
+                    group_layout.takeAt(old_pos)
+                group_layout.addWidget(widget_info['widget'])
+            else:
+                scroll_pos = self.scroll_layout.indexOf(widget_info['widget'])
+                if scroll_pos != -1:
+                    self.scroll_layout.takeAt(scroll_pos)
+                self.scroll_layout.insertWidget(self.scroll_layout.count() - 1, widget_info['widget'])
+
+        if current_sort == SortEnum.DIFFICULTY:
+            for group_box in self.group_boxes.values():
+                pos = self.scroll_layout.indexOf(group_box)
+                if pos != -1:
+                    self.scroll_layout.takeAt(pos)
+                if sort_order:
+                    self.scroll_layout.insertWidget(0, group_box)
+                else:
+                    self.scroll_layout.addWidget(group_box)
+
+
+        self.update_visibility()
+
+    def update_visibility(self):
+        """更新歌曲列表的可见性（含分组控制）"""
+        visible_count = 0
+        search_text = self.search_entry.text()
+        active_states = [state for state, cb in self.state_filters.items() if cb.isChecked()]
+        current_sort = self.sort_com.currentText()
+
         # 隐藏所有分组框
         for group_box in self.group_boxes.values():
             group_box.setVisible(False)
 
         # 处理歌曲行可见性及布局
-        for idx, widget_info in enumerate(sorted_widgets):
+        for idx, widget_info in enumerate(self.song_widgets):
             current_state = widget_info['status'][0]
             widget_text = widget_info['name'] + '\t' + widget_info['artists']
             is_visible = current_state in active_states and search_text.lower() in widget_text.lower()
@@ -255,16 +287,6 @@ class SongApp(QWidget):
                 if current_sort == SortEnum.DIFFICULTY:
                     group_box = self.group_boxes[widget_info['difficulty']]
                     group_box.setVisible(True)
-                    group_layout = group_box.layout()
-                    old_pos = group_layout.indexOf(widget_info['widget'])
-                    if old_pos != -1:
-                        group_layout.takeAt(old_pos)
-                    group_layout.addWidget(widget_info['widget'])
-                else:
-                    scroll_pos = self.scroll_layout.indexOf(widget_info['widget'])
-                    if scroll_pos != -1:
-                        self.scroll_layout.takeAt(scroll_pos)
-                    self.scroll_layout.insertWidget(self.scroll_layout.count() - 1, widget_info['widget'])
 
         self.count_label.setText(f"歌曲: {visible_count}")
 
