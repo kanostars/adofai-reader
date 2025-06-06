@@ -38,6 +38,7 @@ class SongApp(QWidget):
         self.state_filters = None
         self.count_label = None
         self.rks_label = None
+        self.scroll_area = None
 
         self.init_ui()
         self.create_all_widgets()
@@ -160,6 +161,7 @@ class SongApp(QWidget):
         self.scroll_layout.setContentsMargins(5, 5, 5, 5)
         scroll_area.setWidget(scroll_content)
 
+        self.scroll_area = scroll_area
         main_layout.addWidget(scroll_area)
 
     def create_all_widgets(self):
@@ -216,7 +218,7 @@ class SongApp(QWidget):
         # 添加底部弹簧
         self.scroll_layout.addSpacerItem(QSpacerItem(20, 20,
                                                      QSizePolicy.Policy.Minimum,
-                                                     QSizePolicy.Policy.Expanding))
+                                                     QSizePolicy.Policy.MinimumExpanding))
 
     def update_sorted_list(self):
         """ 更新歌曲列表的排序 """
@@ -269,6 +271,9 @@ class SongApp(QWidget):
         search_text = self.search_entry.text()
         active_states = [state for state, cb in self.state_filters.items() if cb.isChecked()]
         current_sort = self.sort_com.currentText()
+        scroll_bar = self.scroll_area.verticalScrollBar()
+        old_pos = scroll_bar.value()  # 保存当前位置
+
 
         # 隐藏所有分组框
         for group_box in self.group_boxes.values():
@@ -304,6 +309,7 @@ class SongApp(QWidget):
         # 保存状态
         self.btn_status = {'data': [cb.isChecked() for state, cb in self.state_filters.items()]}
         FileHandler.save_status_data(self.btn_status)
+        scroll_bar.setValue(old_pos)
 
     def refresh_song_states(self):
         """刷新歌曲状态"""
@@ -346,6 +352,7 @@ class SongApp(QWidget):
             self.refresh_song_states()
 
             self.update_visibility()
+
         super().changeEvent(event)
 
 
