@@ -4,7 +4,7 @@ import sys
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QGroupBox,
-    QScrollArea, QSizePolicy, QSpacerItem
+    QScrollArea, QSizePolicy, QSpacerItem, QMenu
 )
 
 import FileHandler
@@ -34,7 +34,7 @@ class SongApp(QWidget):
 
         self.sort_com = None
         self.search_entry = None
-        self.scroll_layout = None
+        self.scroll_widget = None
         self.state_filters = None
         self.count_label = None
         self.rks_label = None
@@ -95,35 +95,39 @@ class SongApp(QWidget):
             logging.error("无法加载自定义数据文件", e)
 
     def init_ui(self):
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(10, 10, 10, 10)
+        # main_layout = QVBoxLayout(self)
+        # main_layout.setContentsMargins(10, 10, 10, 10)
 
-        # 状态筛选
-        status_layout = QHBoxLayout()
-        status_layout.addWidget(QLabel("显示状态:"))
+        # 菜单选项
+        menu_widget = QWidget(self)
+        menu_widget.move(0, 0)
+        menu_widget.resize(self.width(), 50)
+        menu_layout = QHBoxLayout(menu_widget)
+
+        menu_layout.addWidget(QLabel("显示状态:"))
 
         # 添加更多筛选选项
         self.state_filters = {
             0: FilterCheckBox(
-                status_layout,
+                menu_layout,
                 text='未玩过',
                 checked=self.btn_status['data'][0],
                 change_connect=self.update_visibility
             ),
             1: FilterCheckBox(
-                status_layout,
+                menu_layout,
                 text='进行中',
                 checked=self.btn_status['data'][1],
                 change_connect=self.update_visibility
             ),
             2: FilterCheckBox(
-                status_layout,
+                menu_layout,
                 text='已完成',
                 checked=self.btn_status['data'][2],
                 change_connect=self.update_visibility
             ),
             3: FilterCheckBox(
-                status_layout,
+                menu_layout,
                 text='完美无瑕',
                 checked=self.btn_status['data'][3],
                 change_connect=self.update_visibility
@@ -138,87 +142,91 @@ class SongApp(QWidget):
             SortEnum.RKS
         ])
         self.sort_com.currentIndexChanged.connect(self.update_sorted_list)
-        status_layout.addWidget(self.sort_com)
+        menu_layout.addWidget(self.sort_com)
 
         self.search_entry = SearchEntry()
         self.search_entry.textChanged.connect(self.update_visibility)
-        status_layout.addWidget(self.search_entry)
+        menu_layout.addWidget(self.search_entry)
 
         self.count_label = QLabel("歌曲: 0")
-        status_layout.addWidget(self.count_label)
+        menu_layout.addWidget(self.count_label)
 
-        status_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
+        menu_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
         self.rks_label = QLabel("RKS: 0")
-        status_layout.addWidget(self.rks_label)
+        menu_layout.addWidget(self.rks_label)
 
-        main_layout.addLayout(status_layout)
+        # main_layout.addLayout(menu_layout)
 
         # 可滚动区域
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_content = QWidget()
-        self.scroll_layout = QVBoxLayout(scroll_content)
-        self.scroll_layout.setContentsMargins(5, 5, 5, 5)
-        scroll_area.setWidget(scroll_content)
-
-        self.scroll_area = scroll_area
-        main_layout.addWidget(scroll_area)
+        # scroll_area = QScrollArea()
+        # scroll_area.setWidgetResizable(True)
+        # scroll_content = QWidget()
+        # self.scroll_layout = QVBoxLayout(scroll_content)
+        # self.scroll_layout.setContentsMargins(5, 5, 5, 5)
+        # scroll_area.setWidget(scroll_content)
+        #
+        # self.scroll_area = scroll_area
+        self.scroll_widget = ScrollContentWidget(self)
+        self.scroll_widget.move(0, 50)
+        self.scroll_widget.resize(self.width(), self.height() - 50)
+        # main_layout.addWidget(self.scroll_widget)
 
     def create_all_widgets(self):
-        # 创建控件
-        songs_by_difficulty = {}
-        for song in self.songs:
-            diff = song.get("difficulty", 0)
-            songs_by_difficulty.setdefault(diff, []).append(song)
+        # # 创建控件
+        # songs_by_difficulty = {}
+        # for song in self.songs:
+        #     diff = song.get("difficulty", 0)
+        #     songs_by_difficulty.setdefault(diff, []).append(song)
 
         # 创建分组控件
-        for difficulty, songs in sorted(songs_by_difficulty.items()):
-            group_box = QGroupBox(f"难度 {difficulty}")
-            group_layout = QVBoxLayout()
-            group_layout.setSpacing(8)
+        # for difficulty, songs in sorted(songs_by_difficulty.items()):
+        #     group_box = QGroupBox(f"难度 {difficulty}")
+        #     group_layout = QVBoxLayout()
+        #     group_layout.setSpacing(8)
 
-            for song in songs:
-                row_widget = QWidget()
-                row_layout = QHBoxLayout(row_widget)
-                row_layout.setContentsMargins(0, 0, 0, 0)
-                row_layout.setSpacing(10)
+        # difficulty_label_dict = {}
 
-                # 创建界面元素
-                name_label = NameLabel(text=song["music"]["name"])
-                creators_label = ArtistsLabel(text=", ".join(song["music"]["artists"]))
-                download_btn = DownloadButton(url=song["workshopUrl"])
-                status_label = StatusLabel()
-                status = (0, 0)
-                rks = 0
+        for song in self.songs:
+            # 获取谱子一些数据
+            song_id = song['id']
+            music_name = song["music"]["name"]
+            music_artists = ", ".join(song["music"]["artists"])
+            workshop_url = song["workshopUrl"]
+            difficulty = song.get("difficulty", 0)
+            status = (0, 0)
+            rks = 0
 
-                # 存储控件引用
-                self.song_widgets.append({
-                    'id': song['id'],
-                    'name': song['name'],
-                    'widget': row_widget,
-                    'artists': ", ".join(song["music"]["artists"]),
-                    'difficulty': difficulty,
-                    'status': status,
-                    'status_label': status_label,
-                    'rks': rks,
-                })
+            # 创建界面元素
+            name_label = NameLabel(text=music_name)
+            creators_label = ArtistsLabel(text=music_artists)
+            download_btn = DownloadButton(url=workshop_url)
+            status_label = StatusLabel()
 
-                # 添加布局元素
-                row_layout.addWidget(name_label)
-                row_layout.addWidget(creators_label)
-                row_layout.addWidget(download_btn)
-                row_layout.addWidget(status_label)
+            row_widget = RowWidget()
+            row_widget.setFixedWidth(self.width())
+            row_widget.add_widget(name_label)
+            row_widget.add_widget(creators_label)
+            row_widget.add_widget(download_btn)
+            row_widget.add_widget(status_label)
 
-                group_layout.addWidget(row_widget)
-
-            group_box.setLayout(group_layout)
-            self.group_boxes[difficulty] = group_box
-            self.scroll_layout.addWidget(group_box)
+            # 存储控件引用
+            self.song_widgets.append({
+                'id': song_id,
+                'name': music_name,
+                'widget': row_widget,
+                'artists': music_artists,
+                'difficulty': difficulty,
+                'status': status,
+                'status_label': status_label,
+                'rks': rks,
+            })
+            # self.scroll_widget.addWidget(row_widget)
+        self.scroll_widget.update_info(self.song_widgets)
 
         # 添加底部弹簧
-        self.scroll_layout.addSpacerItem(QSpacerItem(20, 20,
-                                                     QSizePolicy.Policy.Minimum,
-                                                     QSizePolicy.Policy.MinimumExpanding))
+        # self.scroll_widget.addSpacerItem(QSpacerItem(20, 20,
+        #                                              QSizePolicy.Policy.Minimum,
+        #                                              QSizePolicy.Policy.MinimumExpanding))
 
     def update_sorted_list(self):
         """ 更新歌曲列表的排序 """
@@ -227,89 +235,95 @@ class SongApp(QWidget):
 
         # 根据排序方式排序数据
         if current_sort == SortEnum.NAME:
-            sorted_widgets = sorted(self.song_widgets, key=lambda x: x['name'], reverse=sort_order)
+            self.song_widgets = sorted(self.song_widgets, key=lambda x: x['name'], reverse=sort_order)
         elif current_sort == SortEnum.ARTISTS:
-            sorted_widgets = sorted(self.song_widgets, key=lambda x: x['artists'], reverse=sort_order)
+            self.song_widgets = sorted(self.song_widgets, key=lambda x: x['artists'], reverse=sort_order)
         elif current_sort == SortEnum.RKS:
-            sorted_widgets = sorted(self.song_widgets, key=lambda x: x['rks'], reverse=sort_order)
+            self.song_widgets = sorted(self.song_widgets, key=lambda x: x['rks'], reverse=sort_order)
         else:
-            current_sort = SortEnum.DIFFICULTY
-            sorted_widgets = sorted(self.song_widgets, key=lambda x: x['difficulty'], reverse=sort_order)
+            # current_sort = SortEnum.DIFFICULTY
+            self.song_widgets = sorted(self.song_widgets, key=lambda x: x['difficulty'], reverse=sort_order)
 
         # 处理歌曲行可见性及布局
-        for idx, widget_info in enumerate(sorted_widgets):
+        # for idx, widget_info in enumerate(sorted_widgets):
 
-            if current_sort == SortEnum.DIFFICULTY:
-                group_box = self.group_boxes[widget_info['difficulty']]
-                group_layout = group_box.layout()
-                old_pos = group_layout.indexOf(widget_info['widget'])
-                if old_pos != -1:
-                    group_layout.takeAt(old_pos)
-                group_layout.addWidget(widget_info['widget'])
-            else:
-                scroll_pos = self.scroll_layout.indexOf(widget_info['widget'])
-                if scroll_pos != -1:
-                    self.scroll_layout.takeAt(scroll_pos)
-                self.scroll_layout.insertWidget(self.scroll_layout.count() - 1, widget_info['widget'])
+            # if current_sort == SortEnum.DIFFICULTY:
+            #     group_box = self.group_boxes[widget_info['difficulty']]
+            #     group_layout = group_box.layout()
+            #     old_pos = group_layout.indexOf(widget_info['widget'])
+            #     if old_pos != -1:
+            #         group_layout.takeAt(old_pos)
+            #     group_layout.addWidget(widget_info['widget'])
+            # else:
 
-        if current_sort == SortEnum.DIFFICULTY:
-            for group_box in self.group_boxes.values():
-                pos = self.scroll_layout.indexOf(group_box)
-                if pos != -1:
-                    self.scroll_layout.takeAt(pos)
-                if sort_order:
-                    self.scroll_layout.insertWidget(0, group_box)
-                else:
-                    self.scroll_layout.addWidget(group_box)
+        #     scroll_pos = self.scroll_layout.indexOf(widget_info['widget'])
+        #     if scroll_pos != -1:
+        #         self.scroll_layout.takeAt(scroll_pos)
+        #     self.scroll_layout.insertWidget(self.scroll_layout.count() - 1, widget_info['widget'])
+        #
+        # if current_sort == SortEnum.DIFFICULTY:
+        #     for group_box in self.group_boxes.values():
+        #         pos = self.scroll_layout.indexOf(group_box)
+        #         if pos != -1:
+        #             self.scroll_layout.takeAt(pos)
+        #         if sort_order:
+        #             self.scroll_layout.insertWidget(0, group_box)
+        #         else:
+        #             self.scroll_layout.addWidget(group_box)
 
 
         self.update_visibility()
 
     def update_visibility(self):
-        """更新歌曲列表的可见性（含分组控制）"""
+        """更新歌曲列表的可见性"""
         visible_count = 0
         search_text = self.search_entry.text()
         active_states = [state for state, cb in self.state_filters.items() if cb.isChecked()]
-        current_sort = self.sort_com.currentText()
-        scroll_bar = self.scroll_area.verticalScrollBar()
-        old_pos = scroll_bar.value()  # 保存当前位置
+
+        data = []
+        # current_sort = self.sort_com.currentText()
+        # scroll_bar = self.scroll_area.verticalScrollBar()
+        # old_pos = scroll_bar.value()  # 保存当前位置
 
 
         # 隐藏所有分组框
-        for group_box in self.group_boxes.values():
-            group_box.setVisible(False)
+        # for group_box in self.group_boxes.values():
+        #     group_box.setVisible(False)
 
         # 处理歌曲行可见性及布局
         for idx, widget_info in enumerate(self.song_widgets):
             current_state = widget_info['status'][0]
             widget_text = widget_info['name'] + '\t' + widget_info['artists']
             is_visible = current_state in active_states and search_text.lower() in widget_text.lower()
-            widget_info['widget'].setVisible(is_visible)
+            widget_info['widget'].setVisible(False)
 
             if is_visible:
+                data.append(widget_info)
                 visible_count += 1
                 # 难度排序时将行控件放回对应分组
-                if current_sort == SortEnum.DIFFICULTY:
-                    group_box = self.group_boxes[widget_info['difficulty']]
-                    group_box.setVisible(True)
+                # if current_sort == SortEnum.DIFFICULTY:
+                #     group_box = self.group_boxes[widget_info['difficulty']]
+                #     group_box.setVisible(True)
 
         self.count_label.setText(f"歌曲: {visible_count}")
 
-        # 处理空列表情况
-        empty_label = getattr(self, '_empty_label', None)
-        if visible_count <= 0:
-            if not empty_label:
-                empty_label = QLabel("没有符合条件的歌曲")
-                setattr(self, '_empty_label', empty_label)
-                self.scroll_layout.insertWidget(0, empty_label)
-            empty_label.show()
-        elif empty_label:
-            empty_label.hide()
+        self.scroll_widget.update_info(data)
+
+        # # 处理空列表情况
+        # empty_label = getattr(self, '_empty_label', None)
+        # if visible_count <= 0:
+        #     if not empty_label:
+        #         empty_label = QLabel("没有符合条件的歌曲")
+        #         setattr(self, '_empty_label', empty_label)
+        #         # self.scroll_layout.insertWidget(0, empty_label)
+        #     empty_label.show()
+        # elif empty_label:
+        #     empty_label.hide()
 
         # 保存状态
         self.btn_status = {'data': [cb.isChecked() for state, cb in self.state_filters.items()]}
         FileHandler.save_status_data(self.btn_status)
-        scroll_bar.setValue(old_pos)
+        # scroll_bar.setValue(old_pos)
 
     def refresh_song_states(self):
         """刷新歌曲状态"""
@@ -354,6 +368,10 @@ class SongApp(QWidget):
             self.update_visibility()
 
         super().changeEvent(event)
+
+    def resizeEvent(self, a0):
+        self.scroll_widget.resize(self.width(), self.height() - 50)
+        super().resizeEvent(a0)
 
 
 if __name__ == '__main__':
