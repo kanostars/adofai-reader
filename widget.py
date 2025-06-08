@@ -386,8 +386,8 @@ class ScrollContentWidget(QWidget):
         self.total_label_delta = label_delta
 
     def update_pos(self):
-        if len(self.data) * self.item_height < self.height() or self.final_pos > 0:
-            self.final_pos = 0
+        if len(self.data) * self.item_height < self.height() or self.final_pos > self.delta:
+            self.final_pos = self.delta
         elif self.final_pos < self.height() - len(self.data) * self.item_height - self.total_label_delta - 10:
             self.final_pos = self.height() - len(self.data) * self.item_height - self.total_label_delta - 10
 
