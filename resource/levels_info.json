@@ -7312,22 +7312,6 @@
         "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2870748805"
     },
     {
-        "id": 3358,
-        "name": "Orca",
-        "difficulty": 13,
-        "music": {
-            "name": "Orca",
-            "artists": [
-                "Plum"
-            ]
-        },
-        "creators": [
-            "리듬갤러리 (RTG)"
-        ],
-        "maxBpm": 240,
-        "workshopUrl": "https://steamcommunity.com/sharedfiles/filedetails/?id=2774975350"
-    },
-    {
         "id": 4283,
         "name": "Unicorn Town",
         "difficulty": 13,
