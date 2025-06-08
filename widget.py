@@ -1,6 +1,9 @@
-from PyQt6.QtCore import Qt, QUrl, QRect, QPropertyAnimation, QEasingCurve, pyqtSlot, QVariant, pyqtProperty
+from PyQt6.QtCore import Qt, QUrl, QRect, QPropertyAnimation, QEasingCurve, QTimer
 from PyQt6.QtGui import QFontMetrics, QDesktopServices, QPainter
-from PyQt6.QtWidgets import QComboBox, QLabel, QPushButton, QCheckBox, QStyle, QLineEdit, QWidget, QHBoxLayout
+from PyQt6.QtWidgets import QComboBox, QLabel, QPushButton, QCheckBox, QStyle, QLineEdit, QWidget, QHBoxLayout, \
+    QGraphicsOpacityEffect, QScrollBar
+
+from enums import *
 
 
 class FilterCheckBox(QCheckBox):
@@ -225,8 +228,40 @@ class RowWidget(QWidget):
         self.row_layout.setContentsMargins(0, 0, 0, 0)
         self.row_layout.setSpacing(10)
 
+        self.opacity_effect = QGraphicsOpacityEffect(self)
+
     def add_widget(self, widget):
         self.row_layout.addWidget(widget)
+
+    def set_opacity(self, opacity):
+        self.opacity_effect.setOpacity(opacity)
+        self.setGraphicsEffect(self.opacity_effect)
+
+
+class DifficultyLabel(QLabel):
+    """
+    难度标签
+    """
+
+    def __init__(self, parent=None, difficulty=0):
+        super().__init__(parent)
+        self.parent = parent
+        self.difficulty = difficulty
+
+        self.setMouseTracking(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        self.is_hide = False
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.is_hide = not self.is_hide
+            if self.is_hide:
+                self.parent.hide_difficulty.append(self.difficulty)
+            else:
+                self.parent.hide_difficulty.remove(self.difficulty)
+            self.parent.refresh_window()
+            self.parent._update_scrollbar()
 
 
 class ScrollContentWidget(QWidget):
@@ -238,59 +273,155 @@ class ScrollContentWidget(QWidget):
         super().__init__(parent)
 
         self.data = []
-        self._pos = 0
+        self.hide_difficulty = []
+        self.pos = 0
         self.final_pos = 0
+        self.difficulty_label_dict = {}
 
+        self.sort_text = SortEnum.DIFFICULTY
+        self.delta = 30
         self.item_height = 30
+        self.total_label_delta = 0
         self.show_item = self.height() // self.item_height + 1
 
-        self.anim = QPropertyAnimation(self, b"pos")
-        self.anim.setDuration(300)
-        # self.anim.setEasingCurve(QEasingCurve.Type.OutQuad)
-        self.anim.setEasingCurve(QEasingCurve.Type.InOutQuad)
+        self.difficulty_label = QLabel(self)
+        self.difficulty_label.move(30, 0)
+        self.difficulty_label.setFixedWidth(self.width() - 30)
 
-    def set_pos(self, pos):
-        self._pos = pos
+        self.anim_timer = QTimer(self)
+        self.anim_timer.timeout.connect(self.animate_step)
+        self.anim_speed = 16
+
+        self.scrollbar = QScrollBar(Qt.Orientation.Vertical, self)
+        self.scrollbar.valueChanged.connect(self._handle_scrollbar)
+
+        self.is_scrolling = False  # 新增滚动状态标志
+        self.scrollbar.sliderPressed.connect(lambda: setattr(self, 'is_scrolling', True))
+        self.scrollbar.sliderReleased.connect(lambda: setattr(self, 'is_scrolling', False))
+
+    def animate_step(self):
+        """每一帧的动画更新"""
+        current_pos = self.pos
+        new_pos = int((self.final_pos - current_pos) / 5 + current_pos)
+
+        if abs(new_pos - current_pos) < 1:
+            self.anim_timer.stop()
+
+        self.pos = new_pos
         self.refresh_window()
 
-    def get_pos(self):
-        return self._pos
-
-    def update_info(self, data):
+    def update_info(self, data, sort_text):
         self.data = data
-        self.refresh_window()
+        self.update_pos()
+        self.sort_text = sort_text
 
     def refresh_window(self):
-        pos = self.get_pos()
+        pos = self.pos
+        for difficulty_label in self.difficulty_label_dict.values():
+            difficulty_label.hide()
+
+        if self.sort_text == SortEnum.DIFFICULTY:
+            self.difficulty_label.show()
+            self.delta = 30
+        else:
+            self.difficulty_label.hide()
+            self.delta = 0
+
+        label_delta = 0
+        first_finish = False
+        last_difficulty = 0
         for index, song_row in enumerate(self.data):
             widget = song_row.get('widget')
+
+            difficulty = song_row.get('difficulty')
+            if difficulty != last_difficulty:
+                last_difficulty = difficulty
+
+                if self.sort_text == SortEnum.DIFFICULTY:
+                    if pos + self.item_height * index + label_delta > 0:
+                        difficulty_label = self.difficulty_label_dict.get(difficulty)
+                        if not difficulty_label:
+                            difficulty_label = DifficultyLabel(self, difficulty)
+                            difficulty_label.setFixedWidth(self.width() - 35 - 12)
+                            difficulty_label.setText(
+                                f'难度{difficulty}-------------------------------------------------------------------------------------------------------------------------------------')
+                            self.difficulty_label_dict[difficulty] = difficulty_label
+                        difficulty_label.move(35, int(pos + self.item_height * index + label_delta))
+                        difficulty_label.show()
+
+                    label_delta += self.item_height
+
             widget.setParent(self)
-            widget.move(0, pos + self.item_height * index)
-            widget_y = widget.pos().y()
-            if widget_y > self.height() or widget_y + self.item_height < 0:
+
+            if difficulty in self.hide_difficulty and self.sort_text == SortEnum.DIFFICULTY:
+                label_delta -= self.item_height
                 widget.hide()
             else:
-                widget.show()
+                widget_y = int(pos + self.item_height * index + label_delta)
+
+                if widget_y > self.height() or widget_y + self.item_height - self.delta < 0:
+                    widget.hide()
+                else:
+                    if not first_finish:
+                        first_finish = True
+                        self.difficulty_label.setText(f'难度：{song_row.get("difficulty")}')
+                    if widget_y < self.delta:
+                        delta = int(self.delta - widget_y)
+                        widget.move(delta, widget_y)
+                        widget.setFixedWidth(self.width() - delta * 2 - 12)
+                        opacity = 1 / delta
+                        widget.set_opacity(opacity)
+                    elif widget_y + self.item_height > self.height():
+                        delta = int(widget_y + self.item_height - self.height())
+                        widget.move(delta, widget_y)
+                        widget.setFixedWidth(self.width() - delta * 2 - 12)
+                        opacity = 1 / delta
+                        widget.set_opacity(opacity)
+                    else:
+                        widget.move(0, widget_y)
+                        widget.setFixedWidth(self.width() - 12)
+                        widget.set_opacity(1)
+                    widget.show()
+
+        self.total_label_delta = label_delta
 
     def update_pos(self):
         if len(self.data) * self.item_height < self.height() or self.final_pos > 0:
             self.final_pos = 0
-        elif self.final_pos < - len(self.data) * self.item_height + self.height():
-            self.final_pos = - len(self.data) * self.item_height + self.height()
+        elif self.final_pos < self.height() - len(self.data) * self.item_height - self.total_label_delta - 10:
+            self.final_pos = self.height() - len(self.data) * self.item_height - self.total_label_delta - 10
 
-        self.anim.setStartValue(self.get_pos())
-        self.anim.setEndValue(self.final_pos)
-        self.anim.start()
+        if not self.anim_timer.isActive():
+            self.anim_timer.start(self.anim_speed)
+
+        self._update_scrollbar()
+
+    def _update_scrollbar(self):
+        """更新滚动条范围和位置"""
+
+        content_height = len(self.data) * self.item_height + self.total_label_delta + 10
+        viewport_height = self.height()
+
+        self.scrollbar.setMaximum(max(0, content_height - viewport_height))
+        self.scrollbar.setPageStep(viewport_height)
+        self.scrollbar.setVisible(content_height > viewport_height)
+
+        if not self.is_scrolling:
+            self.scrollbar.setValue(-int(self.final_pos))
+
+    def _handle_scrollbar(self, value):
+        """滚动条拖动事件处理"""
+
+        self.final_pos = -value
+        self.update_pos()
 
     def wheelEvent(self, a0):
-        self.final_pos += a0.angleDelta().y()
+        self.final_pos += a0.angleDelta().y() / 2
         self.update_pos()
 
     def resizeEvent(self, a0):
         self.show_item = self.height() // self.item_height + 1
-        self.refresh_window()
-
-
-    pos = pyqtProperty(int, get_pos, set_pos)
-
-
+        self.scrollbar.resize(12, self.height())
+        self.scrollbar.move(self.width() - 12, 0)
+        self._update_scrollbar()
+        self.update_pos()

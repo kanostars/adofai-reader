@@ -2,15 +2,12 @@ import logging
 import sys
 
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-    QGroupBox,
-    QScrollArea, QSizePolicy, QSpacerItem, QMenu
+    QApplication, QSizePolicy, QSpacerItem
 )
 
 import FileHandler
 from MD5Handler import generate_md5
 from widget import *
-from enums import *
 
 
 class SongApp(QWidget):
@@ -27,7 +24,6 @@ class SongApp(QWidget):
         self.ids = []
 
         # 初始化数据结构
-        # self.song_states = self.load_song_states()
         self.btn_status = FileHandler.load_status_data()
         self.group_boxes = {}
         self.song_widgets = []
@@ -95,9 +91,6 @@ class SongApp(QWidget):
             logging.error("无法加载自定义数据文件", e)
 
     def init_ui(self):
-        # main_layout = QVBoxLayout(self)
-        # main_layout.setContentsMargins(10, 10, 10, 10)
-
         # 菜单选项
         menu_widget = QWidget(self)
         menu_widget.move(0, 0)
@@ -155,37 +148,11 @@ class SongApp(QWidget):
         self.rks_label = QLabel("RKS: 0")
         menu_layout.addWidget(self.rks_label)
 
-        # main_layout.addLayout(menu_layout)
-
-        # 可滚动区域
-        # scroll_area = QScrollArea()
-        # scroll_area.setWidgetResizable(True)
-        # scroll_content = QWidget()
-        # self.scroll_layout = QVBoxLayout(scroll_content)
-        # self.scroll_layout.setContentsMargins(5, 5, 5, 5)
-        # scroll_area.setWidget(scroll_content)
-        #
-        # self.scroll_area = scroll_area
         self.scroll_widget = ScrollContentWidget(self)
         self.scroll_widget.move(0, 50)
         self.scroll_widget.resize(self.width(), self.height() - 50)
-        # main_layout.addWidget(self.scroll_widget)
 
     def create_all_widgets(self):
-        # # 创建控件
-        # songs_by_difficulty = {}
-        # for song in self.songs:
-        #     diff = song.get("difficulty", 0)
-        #     songs_by_difficulty.setdefault(diff, []).append(song)
-
-        # 创建分组控件
-        # for difficulty, songs in sorted(songs_by_difficulty.items()):
-        #     group_box = QGroupBox(f"难度 {difficulty}")
-        #     group_layout = QVBoxLayout()
-        #     group_layout.setSpacing(8)
-
-        # difficulty_label_dict = {}
-
         for song in self.songs:
             # 获取谱子一些数据
             song_id = song['id']
@@ -220,13 +187,7 @@ class SongApp(QWidget):
                 'status_label': status_label,
                 'rks': rks,
             })
-            # self.scroll_widget.addWidget(row_widget)
-        self.scroll_widget.update_info(self.song_widgets)
-
-        # 添加底部弹簧
-        # self.scroll_widget.addSpacerItem(QSpacerItem(20, 20,
-        #                                              QSizePolicy.Policy.Minimum,
-        #                                              QSizePolicy.Policy.MinimumExpanding))
+        self.scroll_widget.update_info(self.song_widgets, SortEnum.DIFFICULTY)
 
     def update_sorted_list(self):
         """ 更新歌曲列表的排序 """
@@ -241,36 +202,7 @@ class SongApp(QWidget):
         elif current_sort == SortEnum.RKS:
             self.song_widgets = sorted(self.song_widgets, key=lambda x: x['rks'], reverse=sort_order)
         else:
-            # current_sort = SortEnum.DIFFICULTY
             self.song_widgets = sorted(self.song_widgets, key=lambda x: x['difficulty'], reverse=sort_order)
-
-        # 处理歌曲行可见性及布局
-        # for idx, widget_info in enumerate(sorted_widgets):
-
-            # if current_sort == SortEnum.DIFFICULTY:
-            #     group_box = self.group_boxes[widget_info['difficulty']]
-            #     group_layout = group_box.layout()
-            #     old_pos = group_layout.indexOf(widget_info['widget'])
-            #     if old_pos != -1:
-            #         group_layout.takeAt(old_pos)
-            #     group_layout.addWidget(widget_info['widget'])
-            # else:
-
-        #     scroll_pos = self.scroll_layout.indexOf(widget_info['widget'])
-        #     if scroll_pos != -1:
-        #         self.scroll_layout.takeAt(scroll_pos)
-        #     self.scroll_layout.insertWidget(self.scroll_layout.count() - 1, widget_info['widget'])
-        #
-        # if current_sort == SortEnum.DIFFICULTY:
-        #     for group_box in self.group_boxes.values():
-        #         pos = self.scroll_layout.indexOf(group_box)
-        #         if pos != -1:
-        #             self.scroll_layout.takeAt(pos)
-        #         if sort_order:
-        #             self.scroll_layout.insertWidget(0, group_box)
-        #         else:
-        #             self.scroll_layout.addWidget(group_box)
-
 
         self.update_visibility()
 
@@ -279,16 +211,9 @@ class SongApp(QWidget):
         visible_count = 0
         search_text = self.search_entry.text()
         active_states = [state for state, cb in self.state_filters.items() if cb.isChecked()]
+        current_sort = self.sort_com.currentText()
 
         data = []
-        # current_sort = self.sort_com.currentText()
-        # scroll_bar = self.scroll_area.verticalScrollBar()
-        # old_pos = scroll_bar.value()  # 保存当前位置
-
-
-        # 隐藏所有分组框
-        # for group_box in self.group_boxes.values():
-        #     group_box.setVisible(False)
 
         # 处理歌曲行可见性及布局
         for idx, widget_info in enumerate(self.song_widgets):
@@ -300,30 +225,14 @@ class SongApp(QWidget):
             if is_visible:
                 data.append(widget_info)
                 visible_count += 1
-                # 难度排序时将行控件放回对应分组
-                # if current_sort == SortEnum.DIFFICULTY:
-                #     group_box = self.group_boxes[widget_info['difficulty']]
-                #     group_box.setVisible(True)
 
         self.count_label.setText(f"歌曲: {visible_count}")
 
-        self.scroll_widget.update_info(data)
-
-        # # 处理空列表情况
-        # empty_label = getattr(self, '_empty_label', None)
-        # if visible_count <= 0:
-        #     if not empty_label:
-        #         empty_label = QLabel("没有符合条件的歌曲")
-        #         setattr(self, '_empty_label', empty_label)
-        #         # self.scroll_layout.insertWidget(0, empty_label)
-        #     empty_label.show()
-        # elif empty_label:
-        #     empty_label.hide()
+        self.scroll_widget.update_info(data, current_sort)
 
         # 保存状态
         self.btn_status = {'data': [cb.isChecked() for state, cb in self.state_filters.items()]}
         FileHandler.save_status_data(self.btn_status)
-        # scroll_bar.setValue(old_pos)
 
     def refresh_song_states(self):
         """刷新歌曲状态"""
