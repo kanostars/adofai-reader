@@ -344,7 +344,7 @@ class ScrollContentWidget(QWidget):
                             difficulty_label = DifficultyLabel(self, difficulty)
                             difficulty_label.setFixedWidth(self.width() - 35 - 12)
                             difficulty_label.setText(
-                                f'难度{difficulty}-------------------------------------------------------------------------------------------------------------------------------------')
+                                f'-------------------------------------------------------------------难度{difficulty}------------------------------------------------------------------')
                             self.difficulty_label_dict[difficulty] = difficulty_label
                         difficulty_label.move(35, int(pos + self.item_height * index + label_delta))
                         difficulty_label.show()
@@ -425,3 +425,39 @@ class ScrollContentWidget(QWidget):
         self.scrollbar.move(self.width() - 12, 0)
         self._update_scrollbar()
         self.update_pos()
+
+
+class StarsButton(QPushButton):
+    """收藏按钮"""
+
+    def __init__(self, parent=None, song_id=None, is_star=False):
+        super().__init__(parent)
+        self.song_id = song_id
+        self.is_star = is_star
+        self.setFixedWidth(20)
+        self.update_icon()
+
+    def update_icon(self):
+        """更新按钮图标"""
+
+        if self.is_star:
+            self.setText('★')
+            self.setStyleSheet("background: transparent; border: none; color: gold; font-size: 16px;")
+        else:
+            self.setText('☆')
+            self.setStyleSheet("background: transparent; border: none; color: gray; font-size: 16px;")
+
+    def toggle_star(self):
+        """切换收藏状态"""
+        self.is_star = not self.is_star
+        self.update_icon()
+
+        main_window = self.window()
+        if hasattr(main_window, 'refresh_song_stars'):
+            main_window.refresh_song_stars(self.song_id, self.is_star)
+
+    def mouseReleaseEvent(self, event):
+        """处理鼠标释放事件"""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.toggle_star()
+        super().mouseReleaseEvent(event)

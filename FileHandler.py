@@ -16,13 +16,15 @@ def open_adofai(workshop_id: str):
         song = re.search(r'"song":\s*"((?:\\"|.)*?)"', text, flags=re.DOTALL)
         # print('author: ', author.group(1), 'artist: ', artist.group(1), 'song: ', song.group(1))
         # print()
-        return author.group(1).replace('\\"', '"'), artist.group(1).replace('\\"', '"'), song.group(1).replace('\\"', '"')
+        return author.group(1).replace('\\"', '"'), artist.group(1).replace('\\"', '"'), song.group(1).replace('\\"',
+                                                                                                               '"')
     except FileNotFoundError:
         logging.info(f"File not found: {url}")
         return None, None, None
     except Exception as e:
         logging.error(e)
         return None, None, None
+
 
 def get_steam_install_path():
     try:
@@ -55,6 +57,7 @@ def get_steam_install_path():
     finally:
         winreg.CloseKey(key)
 
+
 def load_md5_cache():
     """加载MD5缓存"""
     try:
@@ -65,22 +68,41 @@ def load_md5_cache():
             json.dump({}, f)
         return {}
 
+
 def save_md5_cache(md5_cache):
     """保存MD5缓存"""
     with open(md5_cache_path, 'w', encoding='utf-8') as f:
         json.dump(md5_cache, f, ensure_ascii=False, indent=4)
+
 
 def load_status_data():
     """加载按钮保存状态数据"""
     if os.path.exists(status_file_path):
         with open(status_file_path, 'r', encoding='utf-8') as f:
             return json.load(f)
-    return {'data': [True, True, True, True]}
+    return {'data': [True, True, True, True, False]}
+
 
 def save_status_data(status_data):
     """保存按钮状态数据"""
     with open(status_file_path, 'w', encoding='utf-8') as f:
         json.dump(status_data, f, ensure_ascii=False, indent=4)
+
+
+def load_stars():
+    """加载收藏歌曲ID列表"""
+    try:
+        with open(stars_file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+
+def save_stars(stars):
+    """保存收藏歌曲ID列表"""
+    with open(stars_file_path, 'w', encoding='utf-8') as f:
+        json.dump(stars, f, ensure_ascii=False, indent=4)
+
 
 def load_song_data():
     """加载歌曲基本信息"""
@@ -91,13 +113,17 @@ def load_song_data():
     except (FileNotFoundError, json.JSONDecodeError):
         return []
 
+
 def load_custom_data():
     """加载存档数据"""
     with open(custom_data_path, 'r', encoding='utf-8-sig') as f:
         return json.load(f)
 
+
 base_url = os.path.join(get_steam_install_path(), 'steamapps', 'workshop', 'content', '977950')
-custom_data_path = os.path.join(get_steam_install_path(), 'steamapps', 'common', 'A Dance of Fire and Ice', 'User', 'custom_data.sav')
+custom_data_path = os.path.join(get_steam_install_path(), 'steamapps', 'common', 'A Dance of Fire and Ice', 'User',
+                                'custom_data.sav')
 md5_cache_path = 'resource/workshop_md5_map.json'
 data_file_path = 'resource/levels_info.json'
 status_file_path = 'resource/status.json'
+stars_file_path = 'resource/starts.json'

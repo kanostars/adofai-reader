@@ -25,6 +25,7 @@ class SongApp(QWidget):
 
         # 初始化数据结构
         self.btn_status = FileHandler.load_status_data()
+        self.stars = FileHandler.load_stars()
         self.group_boxes = {}
         self.song_widgets = []
 
@@ -124,7 +125,13 @@ class SongApp(QWidget):
                 text='完美无瑕',
                 checked=self.btn_status['data'][3],
                 change_connect=self.update_visibility
-            )
+            ),
+            4: FilterCheckBox(
+                menu_layout,
+                text='已收藏',
+                checked=self.btn_status['data'][4],
+                change_connect=self.update_visibility
+            ),
         }
 
         self.sort_com = ComboBox()
@@ -166,6 +173,8 @@ class SongApp(QWidget):
             # 创建界面元素
             name_label = NameLabel(text=music_name)
             creators_label = ArtistsLabel(text=music_artists)
+            is_star = song_id in self.stars
+            stars_button = StarsButton(song_id=song_id, is_star=is_star)
             download_btn = DownloadButton(url=workshop_url)
             status_label = StatusLabel()
 
@@ -173,6 +182,8 @@ class SongApp(QWidget):
             row_widget.setFixedWidth(self.width())
             row_widget.add_widget(name_label)
             row_widget.add_widget(creators_label)
+            row_widget.add_widget(stars_button)
+
             row_widget.add_widget(download_btn)
             row_widget.add_widget(status_label)
 
@@ -186,6 +197,8 @@ class SongApp(QWidget):
                 'status': status,
                 'status_label': status_label,
                 'rks': rks,
+                'stars_button': stars_button,
+                'is_star': is_star
             })
         self.scroll_widget.update_info(self.song_widgets, SortEnum.DIFFICULTY)
 
@@ -213,13 +226,22 @@ class SongApp(QWidget):
         active_states = [state for state, cb in self.state_filters.items() if cb.isChecked()]
         current_sort = self.sort_com.currentText()
 
+        # 获取收藏筛选状态
+        show_stars = self.state_filters[4].isChecked()
+
         data = []
 
         # 处理歌曲行可见性及布局
         for idx, widget_info in enumerate(self.song_widgets):
             current_state = widget_info['status'][0]
             widget_text = widget_info['name'] + '\t' + widget_info['artists']
-            is_visible = current_state in active_states and search_text.lower() in widget_text.lower()
+
+            is_visible = (
+                    current_state in active_states and
+                    search_text.lower() in widget_text.lower() and
+                    (not show_stars or widget_info['is_star'])
+            )
+
             widget_info['widget'].setVisible(False)
 
             if is_visible:
@@ -267,6 +289,24 @@ class SongApp(QWidget):
             average = sum(sorted_rks_list[:20]) / 20
 
         self.rks_label.setText(f'RKS: {average:.2f}')
+
+    def refresh_song_stars(self, song_id, is_stars):
+        """处理收藏状态变化"""
+        if is_stars:
+            if song_id not in self.stars:
+                self.stars.append(song_id)
+        else:
+            if song_id in self.stars:
+                self.stars.remove(song_id)
+
+        for widget_info in self.song_widgets:
+            if widget_info['id'] == song_id:
+                widget_info['is_star'] = is_stars
+                widget_info['stars_button'].update_icon()
+                break
+
+        FileHandler.save_stars(self.stars)
+        self.update_visibility()  # 确保UI刷新
 
     def changeEvent(self, event):
         """当窗口最小化或恢复时重新加载状态"""
