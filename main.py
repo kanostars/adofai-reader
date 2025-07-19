@@ -2,7 +2,7 @@ import logging
 import sys
 
 from PyQt6.QtWidgets import (
-    QApplication, QSizePolicy, QSpacerItem
+    QSizePolicy, QSpacerItem
 )
 
 import FileHandler
@@ -12,6 +12,7 @@ from widget import *
 
 class SongApp(QWidget):
     def __init__(self):
+        self.toast = None
         super().__init__()
 
         self.setWindowTitle("歌曲列表")
@@ -171,7 +172,7 @@ class SongApp(QWidget):
             rks = 0
 
             # 创建界面元素
-            name_label = NameLabel(text=music_name)
+            name_label = NameLabel(text=music_name, main=self)
             creators_label = ArtistsLabel(text=music_artists)
             is_star = song_id in self.stars
             stars_button = StarsButton(song_id=song_id, is_star=is_star)
@@ -308,6 +309,12 @@ class SongApp(QWidget):
         FileHandler.save_stars(self.stars)
         self.update_visibility()  # 确保UI刷新
 
+    def show_toast(self, text=''):
+        if self.toast is None:
+            self.toast = ToastWidget(self)
+        self.toast.set_text(text)
+        self.toast.show()
+
     def changeEvent(self, event):
         """当窗口最小化或恢复时重新加载状态"""
         if event.type() == 99:
@@ -328,3 +335,4 @@ if __name__ == '__main__':
     window = SongApp()
     window.show()
     sys.exit(app.exec())
+

@@ -1,7 +1,7 @@
 from PyQt6.QtCore import Qt, QUrl, QRect, QPropertyAnimation, QEasingCurve, QTimer
 from PyQt6.QtGui import QFontMetrics, QDesktopServices, QPainter
 from PyQt6.QtWidgets import QComboBox, QLabel, QPushButton, QCheckBox, QStyle, QLineEdit, QWidget, QHBoxLayout, \
-    QGraphicsOpacityEffect, QScrollBar
+    QGraphicsOpacityEffect, QScrollBar, QApplication
 
 from enums import *
 
@@ -171,16 +171,25 @@ class NameLabel(QLabel):
     音乐名称标签
     """
 
-    def __init__(self, parent=None, flags=None, text=None):
-        super().__init__(parent, flags)
+    def __init__(self, parent=None, text=None, main=None):
+        super().__init__(parent)
 
-        self.setToolTip(text)
+        self.text = text
+        self.main = main
+
+        self.setToolTip(text+'（右键以复制）')
         self.setMinimumWidth(50)
         self.setFixedWidth(220)
         self.setStyleSheet('padding-right: 5px;qproperty-alignment: AlignLeft;')
         fm = QFontMetrics(self.font())
         elided_name = fm.elidedText(text, Qt.TextElideMode.ElideRight, 220)
         self.setText(elided_name)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.RightButton:
+            QApplication.clipboard().setText(self.text)
+            if self.main:
+                self.main.show_toast('已复制')
 
 
 class ArtistsLabel(QLabel):
@@ -425,6 +434,48 @@ class ScrollContentWidget(QWidget):
         self.scrollbar.move(self.width() - 12, 0)
         self._update_scrollbar()
         self.update_pos()
+
+
+class ToastWidget(QWidget):
+    """
+    toast提示框
+    """
+    def __init__(self, parent=None):
+        super(ToastWidget, self).__init__(parent)
+
+        self.setGeometry(parent.width() // 2 - 50, -50, 200, 30)
+
+        self.back_label = QLabel(self)
+        self.back_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.back_label.setStyleSheet("color: white; background-color: rgba(0, 0, 0, 120); padding: 10px; border-radius: 10px;")
+        self.back_label.setGeometry(0, 0, self.width(), self.height())
+
+        # 实现弹出的动画
+        self.animation = QPropertyAnimation(self, b"geometry")
+        self.animation.setDuration(500)
+        self.animation.setEasingCurve(QEasingCurve.Type.OutQuad)
+
+        self.timer = QTimer(self)
+        self.timer.setInterval(2000)
+        self.timer.timeout.connect(self.hide)
+
+    def set_text(self, text):
+        self.back_label.setText(text)
+
+    def hide(self):
+        self.animation.stop()
+        self.animation.setStartValue(self.geometry())
+        self.animation.setEndValue(QRect(self.x(), -self.height(), self.width(), self.height()))
+        self.animation.start()
+        self.timer.stop()
+
+    def show(self):
+        self.raise_()
+        self.animation.stop()
+        self.animation.setStartValue(QRect(self.x(), -self.height(), self.width(), self.height()))
+        self.animation.setEndValue(QRect(self.x(), 50, self.width(), self.height()))
+        self.animation.start()
+        self.timer.start()
 
 
 class StarsButton(QPushButton):

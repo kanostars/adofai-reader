@@ -79,7 +79,10 @@ def load_status_data():
     """加载按钮保存状态数据"""
     if os.path.exists(status_file_path):
         with open(status_file_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            data = json.load(f)
+            while len(data.get('data')) < 5:
+                data['data'].append(True)
+            return data
     return {'data': [True, True, True, True, False]}
 
 
