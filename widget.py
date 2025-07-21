@@ -177,7 +177,7 @@ class NameLabel(QLabel):
         self.text = text
         self.main = main
 
-        self.setToolTip(text+'（右键以复制）')
+        self.setToolTip(text + '（右键以复制）')
         self.setMinimumWidth(50)
         self.setFixedWidth(220)
         self.setStyleSheet('padding-right: 5px;qproperty-alignment: AlignLeft;')
@@ -440,6 +440,7 @@ class ToastWidget(QWidget):
     """
     toast提示框
     """
+
     def __init__(self, parent=None):
         super(ToastWidget, self).__init__(parent)
 
@@ -447,7 +448,8 @@ class ToastWidget(QWidget):
 
         self.back_label = QLabel(self)
         self.back_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.back_label.setStyleSheet("color: white; background-color: rgba(0, 0, 0, 120); padding: 10px; border-radius: 10px;")
+        self.back_label.setStyleSheet(
+            "color: white; background-color: rgba(0, 0, 0, 120); padding: 10px; border-radius: 10px;")
         self.back_label.setGeometry(0, 0, self.width(), self.height())
 
         # 实现弹出的动画

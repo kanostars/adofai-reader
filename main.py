@@ -160,6 +160,8 @@ class SongApp(QWidget):
         self.scroll_widget.move(0, 50)
         self.scroll_widget.resize(self.width(), self.height() - 50)
 
+        self.toast = ToastWidget(self)
+
     def create_all_widgets(self):
         for song in self.songs:
             # 获取谱子一些数据
@@ -310,8 +312,6 @@ class SongApp(QWidget):
         self.update_visibility()  # 确保UI刷新
 
     def show_toast(self, text=''):
-        if self.toast is None:
-            self.toast = ToastWidget(self)
         self.toast.set_text(text)
         self.toast.show()
 
@@ -335,4 +335,3 @@ if __name__ == '__main__':
     window = SongApp()
     window.show()
     sys.exit(app.exec())
-
