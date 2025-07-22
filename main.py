@@ -1,11 +1,14 @@
 import logging
+import os.path
 import sys
+import zipfile
 
+import requests
 from PyQt6.QtWidgets import (
     QSizePolicy, QSpacerItem
 )
 
-import FileHandler
+import SocketHandler
 from MD5Handler import generate_md5
 from widget import *
 
@@ -37,6 +40,8 @@ class SongApp(QWidget):
         self.count_label = None
         self.rks_label = None
         self.scroll_area = None
+
+        self.socket_handler = SocketHandler.SocketHandler()
 
         self.init_ui()
         self.create_all_widgets()
@@ -152,6 +157,14 @@ class SongApp(QWidget):
         self.count_label = QLabel("歌曲: 0")
         menu_layout.addWidget(self.count_label)
 
+        download_mod_btn = QPushButton("下载Mod")  # 以后要改
+        download_mod_btn.clicked.connect(self.download_mod)
+        menu_layout.addWidget(download_mod_btn)
+
+        check_connect_btn = QPushButton("检查连接")  # 以后要改
+        check_connect_btn.clicked.connect(self.check_connect)
+        menu_layout.addWidget(check_connect_btn)
+
         menu_layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
         self.rks_label = QLabel("RKS: 0")
         menu_layout.addWidget(self.rks_label)
@@ -161,6 +174,49 @@ class SongApp(QWidget):
         self.scroll_widget.resize(self.width(), self.height() - 50)
 
         self.toast = ToastWidget(self)
+
+    def download_mod(self):
+        # 以后要改
+
+        # 下载zip并解压
+        if not os.path.exists(os.path.join(FileHandler.game_url, 'BepInEx')):
+            try:
+                response = requests.get(
+                    'https://github.com/BepInEx/BepInEx/releases/download/v5.4.23.3/BepInEx_win_x64_5.4.23.3.zip')
+                with open(os.path.join(FileHandler.game_url, 'temp.zip'), 'wb') as f:
+                    f.write(response.content)
+                with zipfile.ZipFile(os.path.join(FileHandler.game_url, 'temp.zip'), 'r') as zip_ref:
+                    zip_ref.extractall(FileHandler.game_url)
+            except Exception as e:
+                self.show_toast('下载BepInEx失败')
+                logging.error(e)
+                return
+
+        # 下载mod
+        if not os.path.exists(os.path.join(FileHandler.game_url, 'BepInEx', 'plugins', 'SongsManageMod.dll')):
+            if not os.path.exists(os.path.join(FileHandler.game_url, 'BepInEx', 'plugins')):
+                os.makedirs(os.path.join(FileHandler.game_url, 'BepInEx', 'plugins'))
+            try:
+                response = requests.get(
+                    'https://github.com/kanostars/adofai-reader/releases/download/%E9%85%8D%E5%A5%97%E6%A8%A1%E7%BB%841.0.1/SongsManageMod.dll')
+                with open(os.path.join(FileHandler.game_url, 'BepInEx', 'plugins', 'SongsManageMod.dll'), 'wb') as f:
+                    f.write(response.content)
+            except Exception as e:
+                self.show_toast('下载模组失败')
+                logging.error(e)
+                return
+
+        self.show_toast('下载成功')
+
+    def check_connect(self):
+        # 以后要改
+        if self.socket_handler.is_connected():
+            if self.socket_handler.is_new_version():
+                self.show_toast('连接成功')
+            else:
+                self.show_toast('版本不一致')
+        else:
+            self.show_toast('连接失败')
 
     def create_all_widgets(self):
         for song in self.songs:
@@ -174,7 +230,7 @@ class SongApp(QWidget):
             rks = 0
 
             # 创建界面元素
-            name_label = NameLabel(text=music_name, main=self)
+            name_label = NameLabel(text=music_name)
             creators_label = ArtistsLabel(text=music_artists)
             is_star = song_id in self.stars
             stars_button = StarsButton(song_id=song_id, is_star=is_star)
@@ -331,7 +387,10 @@ class SongApp(QWidget):
 
 
 if __name__ == '__main__':
+    import global_var
+
     app = QApplication(sys.argv)
     window = SongApp()
+    global_var.global_window = window
     window.show()
     sys.exit(app.exec())

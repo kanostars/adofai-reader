@@ -6,7 +6,7 @@ import os
 
 
 def open_adofai(workshop_id: str):
-    url = os.path.join(base_url, workshop_id, 'main.adofai')
+    url = get_adofai_path(workshop_id)
     try:
         with open(url, 'r', newline='\r', encoding='utf-8-sig', errors='ignore') as f:
             text = f.read()
@@ -24,6 +24,10 @@ def open_adofai(workshop_id: str):
     except Exception as e:
         logging.error(e)
         return None, None, None
+
+
+def get_adofai_path(workshop_id: str):
+    return os.path.join(base_url, workshop_id, 'main.adofai')
 
 
 def get_steam_install_path():
@@ -124,8 +128,8 @@ def load_custom_data():
 
 
 base_url = os.path.join(get_steam_install_path(), 'steamapps', 'workshop', 'content', '977950')
-custom_data_path = os.path.join(get_steam_install_path(), 'steamapps', 'common', 'A Dance of Fire and Ice', 'User',
-                                'custom_data.sav')
+game_url = os.path.join(get_steam_install_path(), 'steamapps', 'common', 'A Dance of Fire and Ice')
+custom_data_path = os.path.join(game_url, 'User', 'custom_data.sav')
 md5_cache_path = 'resource/workshop_md5_map.json'
 data_file_path = 'resource/levels_info.json'
 status_file_path = 'resource/status.json'

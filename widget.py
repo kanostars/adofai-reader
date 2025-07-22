@@ -1,9 +1,13 @@
+import os.path
+
 from PyQt6.QtCore import Qt, QUrl, QRect, QPropertyAnimation, QEasingCurve, QTimer
 from PyQt6.QtGui import QFontMetrics, QDesktopServices, QPainter
 from PyQt6.QtWidgets import QComboBox, QLabel, QPushButton, QCheckBox, QStyle, QLineEdit, QWidget, QHBoxLayout, \
     QGraphicsOpacityEffect, QScrollBar, QApplication
 
 from enums import *
+import FileHandler
+import global_var
 
 
 class FilterCheckBox(QCheckBox):
@@ -171,11 +175,10 @@ class NameLabel(QLabel):
     音乐名称标签
     """
 
-    def __init__(self, parent=None, text=None, main=None):
+    def __init__(self, parent=None, text=None):
         super().__init__(parent)
 
         self.text = text
-        self.main = main
 
         self.setToolTip(text + '（右键以复制）')
         self.setMinimumWidth(50)
@@ -188,8 +191,8 @@ class NameLabel(QLabel):
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.RightButton:
             QApplication.clipboard().setText(self.text)
-            if self.main:
-                self.main.show_toast('已复制')
+            if global_var.global_window:
+                global_var.global_window.show_toast('已复制')
 
 
 class ArtistsLabel(QLabel):
@@ -218,11 +221,20 @@ class DownloadButton(QPushButton):
 
         self.setFixedWidth(70)
         self.setText('下载')
-        self.url = url
+        self.url = url.strip()
 
     def mouseReleaseEvent(self, event):
         if self.url and self.url.startswith(("http://", "https://")):
-            QDesktopServices.openUrl(QUrl(self.url))
+            workshop_id = self.url.split('&')[0].split('=')[-1]
+            if os.path.exists(FileHandler.get_adofai_path(workshop_id)):
+                if global_var.global_window and global_var.global_window.socket_handler.is_connected():
+                    global_var.global_window.socket_handler.play(FileHandler.get_adofai_path(workshop_id))
+                    global_var.global_window.showMinimized()
+                else:
+                    global_var.global_window.show_toast('模组连接失败')
+            else:
+                global_var.global_window.show_toast('已打开网页，请手动订阅')
+                QDesktopServices.openUrl(QUrl(self.url))
 
 
 class RowWidget(QWidget):
