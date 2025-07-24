@@ -256,7 +256,7 @@ class SongApp(QWidget):
         """更新歌曲列表的可见性"""
         visible_count = 0
         search_text = self.search_entry.text()
-        active_states = self.filter_check_box_group.get_checked()
+        active_states = [state for state, checked in enumerate(self.filter_check_box_group.get_checked()) if checked]
         current_sort = self.sort_com.currentText()
 
         # 获取收藏筛选状态
