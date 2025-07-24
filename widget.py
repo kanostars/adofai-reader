@@ -15,26 +15,21 @@ class FilterCheckBox(QCheckBox):
     用于筛选的复选框
     """
 
-    def __init__(self, parent=None, text=None, checked=True, change_connect=None):
-        super().__init__(None)
-
-        self.setText(text)
-        self.setChecked(checked)
-        if change_connect:
-            self.stateChanged.connect(change_connect)
-        if parent:
-            parent.addWidget(self)
+    def __init__(self, text=None):
+        super().__init__()
+        if text:
+            self.setText(text)
 
         fm = QFontMetrics(self.font())
-        self.text_width = fm.horizontalAdvance(text)  # 文字内容宽度
+        text_width = fm.horizontalAdvance(self.text())  # 文字内容宽度
         style = self.style()
         # 获取勾选框宽度和默认间距（根据当前样式）
-        self.checkbox_width = style.pixelMetric(QStyle.PixelMetric.PM_IndicatorWidth)
-        self.spacing = style.pixelMetric(QStyle.PixelMetric.PM_CheckBoxLabelSpacing)
+        checkbox_width = style.pixelMetric(QStyle.PixelMetric.PM_IndicatorWidth)
+        spacing = style.pixelMetric(QStyle.PixelMetric.PM_CheckBoxLabelSpacing)
         # 初始宽度
-        self.initial_width = self.checkbox_width + self.spacing
+        self.initial_width = checkbox_width + spacing
         # 展开宽度
-        self.expanded_width = self.initial_width + self.text_width + self.spacing
+        self.expanded_width = self.initial_width + text_width + spacing
 
         # 初始化固定宽度为初始状态
         self.setFixedWidth(self.initial_width)
@@ -57,6 +52,35 @@ class FilterCheckBox(QCheckBox):
         self.animation.setEndValue(self.initial_width)
         self.animation.start()
         super().leaveEvent(event)
+
+
+class FilterCheckBoxGroup:
+    """
+    用于筛选的复选框组
+    """
+
+    def __init__(self, parent=None, text=None, checked=None, change_connect=None):
+        if text is None:
+            text = []
+        if checked is None:
+            checked = []
+
+        self.checkboxes = []
+
+        for i in range(len(text)):
+            checkbox = FilterCheckBox(text[i])
+            checkbox.setChecked(checked[i])
+            if change_connect:
+                checkbox.stateChanged.connect(change_connect)
+            if parent:
+                parent.addWidget(checkbox)
+
+            self.checkboxes.append(checkbox)
+
+    def get_checked(self, index=None):
+        if index is None:
+            return [checkbox.isChecked() for checkbox in self.checkboxes]
+        return self.checkboxes[index].isChecked()
 
 
 class ComboBox(QComboBox):

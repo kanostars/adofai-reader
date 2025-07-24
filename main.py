@@ -36,7 +36,7 @@ class SongApp(QWidget):
         self.sort_com = None
         self.search_entry = None
         self.scroll_widget = None
-        self.state_filters = None
+        self.filter_check_box_group = None
         self.count_label = None
         self.rks_label = None
         self.scroll_area = None
@@ -107,38 +107,12 @@ class SongApp(QWidget):
         menu_layout.addWidget(QLabel("显示状态:"))
 
         # 添加更多筛选选项
-        self.state_filters = {
-            0: FilterCheckBox(
-                menu_layout,
-                text='未玩过',
-                checked=self.btn_status['data'][0],
-                change_connect=self.update_visibility
-            ),
-            1: FilterCheckBox(
-                menu_layout,
-                text='进行中',
-                checked=self.btn_status['data'][1],
-                change_connect=self.update_visibility
-            ),
-            2: FilterCheckBox(
-                menu_layout,
-                text='已完成',
-                checked=self.btn_status['data'][2],
-                change_connect=self.update_visibility
-            ),
-            3: FilterCheckBox(
-                menu_layout,
-                text='完美无瑕',
-                checked=self.btn_status['data'][3],
-                change_connect=self.update_visibility
-            ),
-            4: FilterCheckBox(
-                menu_layout,
-                text='已收藏',
-                checked=self.btn_status['data'][4],
-                change_connect=self.update_visibility
-            ),
-        }
+        self.filter_check_box_group = FilterCheckBoxGroup(
+            menu_layout,
+            text=['未玩过', '进行中', '已完成', '完美无瑕', '已收藏'],
+            checked=self.btn_status['data'],
+            change_connect=self.update_visibility
+        )
 
         self.sort_com = ComboBox()
         self.sort_com.addItems([
@@ -282,11 +256,11 @@ class SongApp(QWidget):
         """更新歌曲列表的可见性"""
         visible_count = 0
         search_text = self.search_entry.text()
-        active_states = [state for state, cb in self.state_filters.items() if cb.isChecked()]
+        active_states = self.filter_check_box_group.get_checked()
         current_sort = self.sort_com.currentText()
 
         # 获取收藏筛选状态
-        show_stars = self.state_filters[4].isChecked()
+        show_stars = self.filter_check_box_group.get_checked(4)
 
         data = []
 
@@ -312,7 +286,7 @@ class SongApp(QWidget):
         self.scroll_widget.update_info(data, current_sort)
 
         # 保存状态
-        self.btn_status = {'data': [cb.isChecked() for state, cb in self.state_filters.items()]}
+        self.btn_status = {'data': self.filter_check_box_group.get_checked()}
         FileHandler.save_status_data(self.btn_status)
 
     def refresh_song_states(self):
